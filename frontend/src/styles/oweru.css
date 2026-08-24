@@ -1,0 +1,247 @@
+:root {
+  --oweru-navy: #0e1a3b;
+  --oweru-navy-soft: #16234a;
+  --oweru-gold: #e3a53d;
+  --oweru-gold-soft: #f3c876;
+  --oweru-bg: #eef1f5;
+  --oweru-ink: #1c2333;
+  --oweru-muted: #6b7280;
+  --bs-body-bg: var(--oweru-bg);
+  --bs-body-color: var(--oweru-ink);
+}
+
+body {
+  background: var(--oweru-bg);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* ---------- Navbar ---------- */
+.oweru-navbar {
+  background: var(--oweru-navy);
+  padding: 0.75rem 1.5rem;
+}
+
+.oweru-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #fff;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.oweru-brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--oweru-gold), var(--oweru-gold-soft));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--oweru-navy);
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.oweru-brand-o {
+  color: var(--oweru-gold);
+}
+
+/* ---------- Category cards ---------- */
+.oweru-cat-card {
+  background: #fff;
+  border: 1.5px solid #e3e6ec;
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .1s ease;
+  height: 100%;
+}
+
+.oweru-cat-card:hover {
+  border-color: var(--oweru-gold-soft);
+  box-shadow: 0 6px 18px rgba(14, 26, 59, 0.08);
+  transform: translateY(-1px);
+}
+
+.oweru-cat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  margin-bottom: 0.75rem;
+}
+
+/* ---------- Joined / connected stepper ---------- */
+.oweru-stepper {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.75rem;
+}
+
+.oweru-step {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.oweru-step:last-child {
+  flex: 0 0 auto;
+}
+
+.oweru-step-circle {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: #fff;
+  border: 2px solid #d6dae3;
+  color: var(--oweru-muted);
+  transition: all .15s ease;
+}
+
+.oweru-step-label {
+  margin-left: 0.6rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--oweru-muted);
+  white-space: nowrap;
+}
+
+.oweru-step-line {
+  flex: 1;
+  height: 2px;
+  background: #d6dae3;
+  margin: 0 0.75rem;
+}
+
+.oweru-step.is-complete .oweru-step-circle {
+  background: var(--oweru-gold);
+  border-color: var(--oweru-gold);
+  color: #fff;
+}
+
+.oweru-step.is-complete .oweru-step-line {
+  background: var(--oweru-gold);
+}
+
+.oweru-step.is-active .oweru-step-circle {
+  border-color: var(--oweru-navy);
+  color: var(--oweru-navy);
+  box-shadow: 0 0 0 4px rgba(14, 26, 59, 0.08);
+}
+
+.oweru-step.is-active .oweru-step-label,
+.oweru-step.is-complete .oweru-step-label {
+  color: var(--oweru-ink);
+}
+
+/* ---------- Form panel ---------- */
+.oweru-panel {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e3e6ec;
+  padding: 1.75rem;
+}
+
+.oweru-feature-chip {
+  border: 1px solid #d6dae3;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  background: #fff;
+  font-size: 0.92rem;
+}
+
+.oweru-feature-chip.checked {
+  border-color: var(--oweru-gold);
+  background: #fdf6e9;
+}
+
+.btn-oweru {
+  background: var(--oweru-gold);
+  border-color: var(--oweru-gold);
+  color: #1c2333;
+  font-weight: 600;
+}
+
+.btn-oweru:hover {
+  background: var(--oweru-gold-soft);
+  border-color: var(--oweru-gold-soft);
+  color: #1c2333;
+}
+
+.oweru-map-placeholder {
+  height: 220px;
+  border-radius: 10px;
+  border: 1px solid #e3e6ec;
+  background:
+    linear-gradient(0deg, rgba(14,26,59,0.03), rgba(14,26,59,0.03)),
+    repeating-linear-gradient(45deg, #f4f6f9, #f4f6f9 10px, #eef1f5 10px, #eef1f5 20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--oweru-muted);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.oweru-map-placeholder .leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 10px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.oweru-map-placeholder .leaflet-container + span {
+  display: none;
+}
+
+.oweru-upload-box {
+  border: 2px dashed #d6dae3;
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--oweru-muted);
+  cursor: pointer;
+  background: #fafbfc;
+}
+
+.oweru-upload-box:hover {
+  border-color: var(--oweru-gold);
+  color: var(--oweru-ink);
+}
+
+.oweru-review-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--oweru-muted);
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+
+.oweru-review-value {
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
