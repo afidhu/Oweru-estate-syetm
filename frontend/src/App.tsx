@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import Navbar from './components/Navbar'
-import CategoryGrid from './components/CategoryGrid'
-import Stepper from './components/Stepper'
+import Navbar from './components/shared/Navbar'
+import CategoryGrid from './components/shared/CategoryGrid'
+import Stepper from './components/shared/Stepper'
 import DetailsStep from './components/steps/DetailsStep'
 import LocationImagesStep from './components/steps/LocationImagesStep'
 import ReviewStep from './components/steps/ReviewStep'
 import { getCategory } from './data/categories'
+import { houseForSaleApi } from './services/api'
+
 import type {
   CategoryId, CommercialDetails, DetailsData, HouseDetails, LandDetails, LocationData,
 } from './types'
@@ -57,11 +59,35 @@ export default function App() {
     setSubmitted(false)
   }
 
-  function handleSubmit() {
-    // Wire this up to your API call.
-    // eslint-disable-next-line no-console
-    console.log('Submitting estate', { category, details, location })
-    setSubmitted(true)
+  async function handleSubmit() {
+    try {
+      // Prepare data according to backend schema
+      const payload = {
+        title: details?.propertyTitle || '',
+        salePrice: details?.salePrice ? parseFloat(details.salePrice) : 0,
+        sizeUnit: details?.sizeUnit || undefined,
+        size: details?.size ? parseFloat(details.size) : undefined,
+        houseType: details?.houseType || undefined,
+        bedrooms: details?.bedrooms ? parseInt(details.bedrooms) : undefined,
+        bathrooms: details?.bathrooms ? parseInt(details.bathrooms) : undefined,
+        status: details?.status || 'ACTIVE',
+        exactLocation: location?.exactLocation || undefined,
+        latitude: location?.lat || undefined,
+        longitude: location?.lng || undefined,
+        description: location?.description || undefined,
+        language: location?.descriptionLang === 'sw' ? 'KISWAHILI' : 'ENGLISH',
+      }
+
+      console.log('Submitting to backend:', payload)
+      
+      const response = await houseForSaleApi.create(payload)
+      console.log('Backend response:', response)
+      
+      setSubmitted(true)
+    } catch (error) {
+      console.error('Error submitting to backend:', error)
+      alert('Failed to submit property. Please try again.')
+    }
   }
 
   return (

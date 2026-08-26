@@ -13,7 +13,7 @@ export class WardsService {
   }
 
   findAll() {
-    return `This action returns all wards`;
+    return this.prisma.ward.findMany();
   }
 
   findOne(id: number) {

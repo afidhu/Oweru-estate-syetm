@@ -47,7 +47,7 @@ function BrokerOwnerStatus({
 }) {
   return (
     <div className="row g-3 mt-1">
-      <div className="col-md-4">
+      {/* <div className="col-md-4">
         <label className="form-label fw-semibold">Status</label>
         <select
           className="form-select"
@@ -56,23 +56,65 @@ function BrokerOwnerStatus({
         >
           {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-      </div>
-      <div className="col-md-4">
-        <label className="form-label fw-semibold">Broker</label>
+      </div> */}
+      <div className="col-md-6">
+        <label className="form-label fw-semibold">Broker Info</label> <br />
+
         <input
           className="form-control"
-          placeholder="Select or type broker name..."
+          placeholder="Whatsapp No (+255)"
+          value={broker}
+          onChange={(e) => onField('broker', e.target.value)}
+        />
+      <p></p>
+          <input
+          className="form-control"
+          placeholder="Andika Jina"
+          value={broker}
+          onChange={(e) => onField('broker', e.target.value)}
+        />
+        <p></p>
+
+          <input
+          className="form-control"
+          type='number'
+          placeholder="NIDA(optional) "
+          value={broker}
+          onChange={(e) => onField('broker', e.target.value)}
+        />
+        <p></p>
+          <input
+          className="form-control"
+          placeholder="TIN NO(optional)"
+          type='number'
           value={broker}
           onChange={(e) => onField('broker', e.target.value)}
         />
       </div>
-      <div className="col-md-4">
-        <label className="form-label fw-semibold">Owner</label>
+
+      
+      <div className="col-md-6">
+        <label className="form-label fw-semibold">Owner Info</label>
         <input
           className="form-control"
           placeholder="Select or type owner name..."
           value={owner}
           onChange={(e) => onField('owner', e.target.value)}
+        />
+        <p></p>
+         <input
+          className="form-control"
+          placeholder="Whatsapp No (+255)"
+          value={broker}
+          onChange={(e) => onField('broker', e.target.value)}
+        />
+        <p></p>
+         <input
+          className="form-control"
+          type='number'
+          placeholder="NIDA(optional) "
+          value={broker}
+          onChange={(e) => onField('broker', e.target.value)}
         />
         <div className="form-text">Who holds title to this property.</div>
       </div>

@@ -7,31 +7,31 @@ import { PrismaService } from 'src/prisma.config/prisma.service';
 export class DealsService {
   constructor(private readonly prisma: PrismaService) {}
   create(createDealDto: CreateDealDto) {
-    return this.prisma.deal.create({
-      data: createDealDto,
-    });
+    // return this.prisma.deal.create({
+    //   data: createDealDto,
+    // });
   }
 
   findAll() {
-    return this.prisma.deal.findMany();
+    // return this.prisma.deal.findMany();
   }
 
   findOne(id: number) {
-    return this.prisma.deal.findUnique({
-      where: { id: id.toString() },
-    });
+    // return this.prisma.deal.findUnique({
+    //   where: { id: id.toString() },
+    // });
   }
 
   update(id: number, updateDealDto: UpdateDealDto) {
-    return this.prisma.deal.update({
-      where: { id: id.toString() },
-      data: updateDealDto,
-    });
+    // return this.prisma.deal.update({
+    //   where: { id: id.toString() },
+    //   data: updateDealDto,
+    // });
   }
 
   remove(id: number) {
-    return this.prisma.deal.delete({
-      where: { id: id.toString() },
-    });
+    // return this.prisma.deal.delete({
+    //   where: { id: id.toString() },
+    // });
   }
 }

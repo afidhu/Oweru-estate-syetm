@@ -18,28 +18,14 @@ let DealsService = class DealsService {
         this.prisma = prisma;
     }
     create(createDealDto) {
-        return this.prisma.deal.create({
-            data: createDealDto,
-        });
     }
     findAll() {
-        return this.prisma.deal.findMany();
     }
     findOne(id) {
-        return this.prisma.deal.findUnique({
-            where: { id: id.toString() },
-        });
     }
     update(id, updateDealDto) {
-        return this.prisma.deal.update({
-            where: { id: id.toString() },
-            data: updateDealDto,
-        });
     }
     remove(id) {
-        return this.prisma.deal.delete({
-            where: { id: id.toString() },
-        });
     }
 };
 exports.DealsService = DealsService;

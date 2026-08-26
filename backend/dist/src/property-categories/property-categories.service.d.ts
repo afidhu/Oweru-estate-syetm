@@ -10,6 +10,7 @@ export declare class PropertyCategoriesService {
         slug: string;
         description: string | null;
         icon: string | null;
+        accent: string | null;
         createdAt: Date;
         updatedAt: Date;
     }>;
@@ -19,6 +20,7 @@ export declare class PropertyCategoriesService {
         slug: string;
         description: string | null;
         icon: string | null;
+        accent: string | null;
         createdAt: Date;
         updatedAt: Date;
     }[]>;
@@ -28,6 +30,7 @@ export declare class PropertyCategoriesService {
         slug: string;
         description: string | null;
         icon: string | null;
+        accent: string | null;
         createdAt: Date;
         updatedAt: Date;
     } | null>;
@@ -37,6 +40,7 @@ export declare class PropertyCategoriesService {
         slug: string;
         description: string | null;
         icon: string | null;
+        accent: string | null;
         createdAt: Date;
         updatedAt: Date;
     }>;
@@ -46,6 +50,7 @@ export declare class PropertyCategoriesService {
         slug: string;
         description: string | null;
         icon: string | null;
+        accent: string | null;
         createdAt: Date;
         updatedAt: Date;
     }>;

@@ -3,4 +3,5 @@ export declare class CreatePropertyCategoryDto {
     slug: string;
     description?: string;
     icon?: string;
+    accent?: string;
 }

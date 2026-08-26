@@ -1,3 +1,4 @@
+import api, { houseForSaleApi } from '../services/api'
 import type { CategoryDef, CategoryId } from '../types'
 
 // Per the brief: only categories that end with a sale are offered to customers
@@ -25,6 +26,11 @@ export const CATEGORIES: CategoryDef[] = [
     accent: '#3BAE6B',
   },
 ]
+
+
+//gethousetype
+// export const HOUSE_TYPES = await houseForSaleApi.getHouseTypes();
+
 
 export const HOUSE_TYPES = ['Apartment', 'Condominium', 'Standalone', 'Duplex', 'Single Room']
 
@@ -63,8 +69,9 @@ export const SIZE_UNITS = ['sqm', 'acre', 'plot', 'metre', 'feet']
 
 export const STATUS_OPTIONS = ['Active', 'Pending', 'Sold', 'Inactive']
 
-export function getCategory(id: CategoryId): CategoryDef {
-  const found = CATEGORIES.find((c) => c.id === id)
+export async function getCategory(id: CategoryId): Promise<CategoryDef> {
+  const categories = await houseForSaleApi.getPropertyCategories()
+  const found = categories.find((c: any) => c.id === id)
   if (!found) throw new Error(`Unknown category: ${id}`)
   return found
 }

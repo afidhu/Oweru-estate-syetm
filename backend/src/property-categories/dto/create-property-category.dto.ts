@@ -16,4 +16,8 @@ export class CreatePropertyCategoryDto {
   @IsString()
   @IsOptional()
   icon?: string;
+  
+  @IsString()
+  @IsOptional()
+  accent?: string;
 }

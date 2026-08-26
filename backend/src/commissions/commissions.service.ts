@@ -7,31 +7,31 @@ import { PrismaService } from 'src/prisma.config/prisma.service';
 export class CommissionsService {
   constructor(private readonly prisma: PrismaService) {}
   create(createCommissionDto: CreateCommissionDto) {
-    return this.prisma.commission.create({
-      data: createCommissionDto,
-    });
+    // return this.prisma.commission.create({
+    //   data: createCommissionDto,
+    // });
   }
 
   findAll() {
-    return this.prisma.commission.findMany();
+    // return this.prisma.commission.findMany();
   }
 
   findOne(id: number) {
-    return this.prisma.commission.findUnique({
-      where: { id: id.toString() },
-    });
+    // return this.prisma.commission.findUnique({
+    //   where: { id: id.toString() },
+    // });
   }
 
   update(id: number, updateCommissionDto: UpdateCommissionDto) {
-    return this.prisma.commission.update({
-      where: { id: id.toString() },
-      data: updateCommissionDto,
-    });
+    // return this.prisma.commission.update({
+    //   where: { id: id.toString() },
+    //   data: updateCommissionDto,
+    // });
   }
 
   remove(id: number) {
-    return this.prisma.commission.delete({
-      where: { id: id.toString() },
-    });
+    // return this.prisma.commission.delete({
+    //   where: { id: id.toString() },
+    // });
   }
 }

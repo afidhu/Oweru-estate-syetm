@@ -16,6 +16,7 @@ class CreatePropertyCategoryDto {
     slug;
     description;
     icon;
+    accent;
 }
 exports.CreatePropertyCategoryDto = CreatePropertyCategoryDto;
 __decorate([
@@ -38,4 +39,9 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreatePropertyCategoryDto.prototype, "icon", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreatePropertyCategoryDto.prototype, "accent", void 0);
 //# sourceMappingURL=create-property-category.dto.js.map

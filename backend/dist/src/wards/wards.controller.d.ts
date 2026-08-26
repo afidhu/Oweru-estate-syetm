@@ -9,7 +9,11 @@ export declare class WardsController {
         name: string;
         districtId: string;
     }, never, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
-    findAll(): string;
+    findAll(): import("@prisma/client").Prisma.PrismaPromise<{
+        id: string;
+        name: string;
+        districtId: string;
+    }[]>;
     findOne(id: string): string;
     update(id: string, updateWardDto: UpdateWardDto): string;
     remove(id: string): string;

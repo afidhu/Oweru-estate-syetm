@@ -18,28 +18,14 @@ let CommissionsService = class CommissionsService {
         this.prisma = prisma;
     }
     create(createCommissionDto) {
-        return this.prisma.commission.create({
-            data: createCommissionDto,
-        });
     }
     findAll() {
-        return this.prisma.commission.findMany();
     }
     findOne(id) {
-        return this.prisma.commission.findUnique({
-            where: { id: id.toString() },
-        });
     }
     update(id, updateCommissionDto) {
-        return this.prisma.commission.update({
-            where: { id: id.toString() },
-            data: updateCommissionDto,
-        });
     }
     remove(id) {
-        return this.prisma.commission.delete({
-            where: { id: id.toString() },
-        });
     }
 };
 exports.CommissionsService = CommissionsService;

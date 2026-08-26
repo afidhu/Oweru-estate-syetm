@@ -23,7 +23,7 @@ let WardsService = class WardsService {
         });
     }
     findAll() {
-        return `This action returns all wards`;
+        return this.prisma.ward.findMany();
     }
     findOne(id) {
         return `This action returns a #${id} ward`;
