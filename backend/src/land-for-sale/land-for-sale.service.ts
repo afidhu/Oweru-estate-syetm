@@ -7,10 +7,15 @@ import { PrismaService } from '../prisma.config/prisma.service';
 export class LandForSaleService {
   constructor(private readonly prisma:PrismaService){}
   create(createLandForSaleDto: CreateLandForSaleDto) {
-    const { features, images, documents, broker, owner, brokerId, ownerId, ...landData } = createLandForSaleDto;
+    const { features, images, documents, broker, owner,regionId,wardId,districtId,landTypeId,propertyCategoryId, brokerId, ownerId, ...landData } = createLandForSaleDto;
     return this.prisma.landForSale.create({
       data: {
         ...landData,
+        landType: landTypeId ? { connect: { id: landTypeId } } : undefined,
+        district: districtId ? { connect: { id: districtId } } : undefined,
+        ward: wardId ? { connect: { id: wardId } } : undefined,
+        region: regionId ? { connect: { id: regionId } } : undefined,
+        propertyCategory: propertyCategoryId ? { connect: { id: propertyCategoryId } } : undefined,
         broker: broker ? { create: broker } : brokerId ? { connect: { id: brokerId } } : undefined,
         owner: owner ? { create: owner } : ownerId ? { connect: { id: ownerId } } : undefined,
         features: features?.length ? { create: features.map((name) => ({ name })) } : undefined,
