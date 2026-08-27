@@ -86,7 +86,9 @@ model Ward {
 model Broker {
   id                 String           @id @default(uuid())
   name               String
-  phone              String?
+  phone              String
+  nid                String?
+  tin                String?
   email              String?
   houseForSale       HouseForSale[]
   landForSale        LandForSale[]
@@ -98,7 +100,9 @@ model Broker {
 model Owner {
   id                 String           @id @default(uuid())
   name               String
-  phone              String?
+  phone              String
+  nid                String?
+  tin                String?
   email              String?
   houseForSale       HouseForSale[]
   landForSale        LandForSale[]
@@ -169,7 +173,7 @@ model HouseForSaleImage {
   id        String       @id @default(uuid())
   house     HouseForSale @relation(fields: [houseId], references: [id], onDelete: Cascade)
   houseId   String
-  url       String
+  url       String       @db.LongText
   isCover   Boolean      @default(false)
   createdAt DateTime     @default(now())
 }
@@ -179,7 +183,7 @@ model HouseForSaleDocument {
   house     HouseForSale @relation(fields: [houseId], references: [id], onDelete: Cascade)
   houseId   String
   name      String // Title Deed, Survey Plan, Sale Agreement
-  url       String
+  url       String       @db.LongText
   fileType  String?
   sizeBytes Int?
   createdAt DateTime     @default(now())
@@ -242,7 +246,7 @@ model LandForSaleImage {
   id        String      @id @default(uuid())
   land      LandForSale @relation(fields: [landId], references: [id], onDelete: Cascade)
   landId    String
-  url       String
+  url       String       @db.LongText
   isCover   Boolean     @default(false)
   createdAt DateTime    @default(now())
 }
@@ -252,7 +256,7 @@ model LandForSaleDocument {
   land      LandForSale @relation(fields: [landId], references: [id], onDelete: Cascade)
   landId    String
   name      String
-  url       String
+  url       String       @db.LongText
   fileType  String?
   sizeBytes Int?
   createdAt DateTime    @default(now())
@@ -311,7 +315,7 @@ model CommercialAreaImage {
   id           String         @id @default(uuid())
   commercial   CommercialArea @relation(fields: [commercialId], references: [id], onDelete: Cascade)
   commercialId String
-  url          String
+  url          String       @db.LongText
   isCover      Boolean        @default(false)
   createdAt    DateTime       @default(now())
 }
@@ -321,7 +325,7 @@ model CommercialAreaDocument {
   commercial   CommercialArea @relation(fields: [commercialId], references: [id], onDelete: Cascade)
   commercialId String
   name         String
-  url          String
+  url          String       @db.LongText
   fileType     String?
   sizeBytes    Int?
   createdAt    DateTime       @default(now())

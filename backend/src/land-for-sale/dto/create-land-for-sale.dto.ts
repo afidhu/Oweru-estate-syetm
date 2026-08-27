@@ -1,4 +1,34 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsUUID, IsIn, Min, Max } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsUUID, IsIn, Min, Max, IsArray, IsBoolean, ValidateNested, IsInt } from 'class-validator';
+import { Type } from 'class-transformer';
+import { PersonInputDto } from '../../owners/dto/person-input.dto';
+
+class LandImageInput {
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isCover?: boolean;
+}
+
+class LandDocumentInput {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @IsString()
+  @IsOptional()
+  fileType?: string;
+
+  @IsInt()
+  @IsOptional()
+  sizeBytes?: number;
+}
 
 export class CreateLandForSaleDto {
   @IsString()
@@ -39,6 +69,16 @@ export class CreateLandForSaleDto {
   @IsOptional()
   ownerId?: string;
 
+  @ValidateNested()
+  @Type(() => PersonInputDto)
+  @IsOptional()
+  broker?: PersonInputDto;
+
+  @ValidateNested()
+  @Type(() => PersonInputDto)
+  @IsOptional()
+  owner?: PersonInputDto;
+
   @IsUUID()
   @IsOptional()
   regionId?: string;
@@ -75,4 +115,21 @@ export class CreateLandForSaleDto {
   @IsOptional()
   @IsIn(['ENGLISH', 'KISWAHILI'])
   language?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  features?: string[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LandImageInput)
+  @IsOptional()
+  images?: LandImageInput[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LandDocumentInput)
+  @IsOptional()
+  documents?: LandDocumentInput[];
 }

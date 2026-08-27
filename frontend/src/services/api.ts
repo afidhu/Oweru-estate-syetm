@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:3000'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -8,6 +8,17 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 })
+
+export const uploadApi = {
+  upload: async (files: File[]) => {
+    const formData = new FormData()
+    files.forEach((file) => formData.append('files', file))
+    const response = await api.post('/uploads', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data.files as { name: string; url: string; fileType?: string; sizeBytes?: number }[]
+  },
+}
 
 export const houseForSaleApi = {
   create: async (data: any) => {
@@ -43,6 +54,22 @@ export const houseForSaleApi = {
     const response = await api.get('/property-categories')
     return response.data
   },
+  getRegions: async () => (await api.get('/regions')).data,
+  getDistricts: async () => (await api.get('/districts')).data,
+  getWards: async () => (await api.get('/wards')).data,
+}
+
+export const landForSaleApi = {
+  create: async (data: unknown) => (await api.post('/land-for-sale', data)).data,
+}
+
+export const commercialAreaApi = {
+  create: async (data: unknown) => (await api.post('/commercial-area', data)).data,
+}
+
+export const lookupApi = {
+  getLandTypes: async () => (await api.get('/land-types')).data,
+  getPropertyTypes: async () => (await api.get('/commercial-area-property-type')).data,
 }
 
 export default api

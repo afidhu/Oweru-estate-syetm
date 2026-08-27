@@ -9,10 +9,22 @@ export interface CategoryDef {
   accent: string // css color used for the card icon chip
 }
 
+export interface PropertyCategoryRecord {
+  id: string
+  title: string
+  slug: string
+  description?: string | null
+  icon?: string | null
+  accent?: string | null
+}
+
 export interface LocationData {
   region: string
+  regionId: string
   district: string
+  districtId: string
   ward: string
+  wardId: string
   exactLocation: string
   searchQuery: string
   lat: number | null
@@ -21,6 +33,13 @@ export interface LocationData {
   descriptionLang: 'en' | 'sw'
   images: File[]
   documents: File[]
+}
+
+export interface PersonDetails {
+  name: string
+  phone: string
+  nid: string
+  tin: string
 }
 
 export interface HouseDetails {
@@ -33,8 +52,8 @@ export interface HouseDetails {
   bathrooms: string
   features: string[]
   status: string
-  broker: string
-  owner: string
+  broker: PersonDetails
+  owner: PersonDetails
 }
 
 export interface LandDetails {
@@ -45,8 +64,8 @@ export interface LandDetails {
   landType: string
   features: string[]
   status: string
-  broker: string
-  owner: string
+  broker: PersonDetails
+  owner: PersonDetails
 }
 
 export interface CommercialDetails {
@@ -56,8 +75,8 @@ export interface CommercialDetails {
   size: string
   commercialType: string
   status: string
-  broker: string
-  owner: string
+  broker: PersonDetails
+  owner: PersonDetails
 }
 
 export type DetailsData = HouseDetails | LandDetails | CommercialDetails
@@ -66,6 +85,11 @@ export interface EstateFormState {
   category: CategoryId | null
   details: DetailsData | null
   location: LocationData
+}
+
+export interface LookupItem {
+  id: string
+  name: string
 }
 
 export const STEP_LABELS = ['Details', 'Location & Images', 'Review'] as const

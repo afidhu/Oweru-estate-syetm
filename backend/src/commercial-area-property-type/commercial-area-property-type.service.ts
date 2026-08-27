@@ -1,26 +1,38 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCommercialAreaPropertyTypeDto } from './dto/create-commercial-area-property-type.dto';
 import { UpdateCommercialAreaPropertyTypeDto } from './dto/update-commercial-area-property-type.dto';
+import { PrismaService } from '../prisma.config/prisma.service';
 
 @Injectable()
 export class CommercialAreaPropertyTypeService {
+  constructor(private readonly prisma: PrismaService) {}
+
   create(createCommercialAreaPropertyTypeDto: CreateCommercialAreaPropertyTypeDto) {
-    return 'This action adds a new commercialAreaPropertyType';
+    return this.prisma.propertyType.create({
+      data: createCommercialAreaPropertyTypeDto,
+    });
   }
 
   findAll() {
-    return `This action returns all commercialAreaPropertyType`;
+    return this.prisma.propertyType.findMany();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} commercialAreaPropertyType`;
+    return this.prisma.propertyType.findUnique({
+      where: { id: id.toString() },
+    });
   }
 
   update(id: number, updateCommercialAreaPropertyTypeDto: UpdateCommercialAreaPropertyTypeDto) {
-    return `This action updates a #${id} commercialAreaPropertyType`;
+    return this.prisma.propertyType.update({
+      where: { id: id.toString() },
+      data: updateCommercialAreaPropertyTypeDto,
+    });
   }
 
   remove(id: number) {
-    return `This action removes a #${id} commercialAreaPropertyType`;
+    return this.prisma.propertyType.delete({
+      where: { id: id.toString() },
+    });
   }
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCommissionDto } from './dto/create-commission.dto';
 import { UpdateCommissionDto } from './dto/update-commission.dto';
-import { PrismaService } from 'src/prisma.config/prisma.service';
+import { PrismaService } from '../prisma.config/prisma.service';
 
 @Injectable()
 export class CommissionsService {

@@ -1,10 +1,14 @@
+import { useEffect, useState } from 'react'
+import { houseForSaleApi, lookupApi } from '../../services/api'
 import type {
-  CategoryId, CommercialDetails, DetailsData, HouseDetails, LandDetails,
+  CategoryId, CommercialDetails, DetailsData, HouseDetails, LandDetails, PersonDetails,
 } from '../../types'
-import {
-  COMMERCIAL_BUILDING_TYPES, COMMERCIAL_LAND_TYPES, HOUSE_FEATURES, HOUSE_TYPES,
-  LAND_FEATURES, LAND_TYPES, SIZE_UNITS, STATUS_OPTIONS,
-} from '../../data/categories'
+const HOUSE_FEATURES = ['Road Access', 'Electricity', 'Water Supply', 'Borehole', 'Parking', 'Security', 'CCTV', 'Fence', 'Furnished', 'Fitted Kitchen', 'Outside Kitchen', 'Dining Room', 'Sitting Room', 'En-suite Bedrooms', 'Balcony', 'Tiled Floor', 'Store Room', 'Garden', 'Swimming Pool', 'Servant Quarter', 'Generator', 'Air Conditioning', 'Other']
+const SIZE_UNITS = ['sqm', 'acre', 'plot', 'metre', 'feet']
+const LAND_TYPES = ['Residential', 'Commercial', 'Agricultural', 'Mixed Use']
+const LAND_FEATURES = ['Road Access', 'Electricity', 'Water Supply', 'Borehole', 'Road Frontage', 'Tarmac Road Access', 'Corner Plot', 'Fence', 'Surveyed', 'Ready for Development', 'Closer to CBD', 'Other']
+const COMMERCIAL_BUILDING_TYPES = ['Office Building', 'Retail Shop', 'Showroom', 'Warehouse', 'Factory', 'Garage / Workshop', 'Hotel', 'Guest House', 'Restaurant Space', 'Bar / Lounge']
+const COMMERCIAL_LAND_TYPES = ['Commercial Plot', 'Industrial Plot', 'Yard', 'Car Wash', 'Petrol Station', 'Vehicle Parking Lot']
 
 interface DetailsStepProps {
   category: CategoryId
@@ -41,10 +45,18 @@ function BrokerOwnerStatus({
   status, broker, owner, onField,
 }: {
   status: string
-  broker: string
-  owner: string
-  onField: (field: 'status' | 'broker' | 'owner', value: string) => void
+  broker: PersonDetails
+  owner: PersonDetails
+  onField: (field: 'status' | 'broker' | 'owner', value: string | PersonDetails) => void
 }) {
+  const personFields = (person: PersonDetails, field: 'broker' | 'owner') => (
+    <>
+      <input className="form-control" placeholder="Full name" value={person.name} required onChange={(e) => onField(field, { ...person, name: e.target.value })} />
+      <input className="form-control mt-2" placeholder="WhatsApp phone number (+255)" value={person.phone} required onChange={(e) => onField(field, { ...person, phone: e.target.value })} />
+      <input className="form-control mt-2" placeholder="NIDA (optional)" value={person.nid} onChange={(e) => onField(field, { ...person, nid: e.target.value })} />
+      <input className="form-control mt-2" placeholder="TIN (optional)" value={person.tin} onChange={(e) => onField(field, { ...person, tin: e.target.value })} />
+    </>
+  )
   return (
     <div className="row g-3 mt-1">
       {/* <div className="col-md-4">
@@ -60,62 +72,13 @@ function BrokerOwnerStatus({
       <div className="col-md-6">
         <label className="form-label fw-semibold">Broker Info</label> <br />
 
-        <input
-          className="form-control"
-          placeholder="Whatsapp No (+255)"
-          value={broker}
-          onChange={(e) => onField('broker', e.target.value)}
-        />
-      <p></p>
-          <input
-          className="form-control"
-          placeholder="Andika Jina"
-          value={broker}
-          onChange={(e) => onField('broker', e.target.value)}
-        />
-        <p></p>
-
-          <input
-          className="form-control"
-          type='number'
-          placeholder="NIDA(optional) "
-          value={broker}
-          onChange={(e) => onField('broker', e.target.value)}
-        />
-        <p></p>
-          <input
-          className="form-control"
-          placeholder="TIN NO(optional)"
-          type='number'
-          value={broker}
-          onChange={(e) => onField('broker', e.target.value)}
-        />
+        {personFields(broker, 'broker')}
       </div>
 
       
       <div className="col-md-6">
         <label className="form-label fw-semibold">Owner Info</label>
-        <input
-          className="form-control"
-          placeholder="Select or type owner name..."
-          value={owner}
-          onChange={(e) => onField('owner', e.target.value)}
-        />
-        <p></p>
-         <input
-          className="form-control"
-          placeholder="Whatsapp No (+255)"
-          value={broker}
-          onChange={(e) => onField('broker', e.target.value)}
-        />
-        <p></p>
-         <input
-          className="form-control"
-          type='number'
-          placeholder="NIDA(optional) "
-          value={broker}
-          onChange={(e) => onField('broker', e.target.value)}
-        />
+        {personFields(owner, 'owner')}
         <div className="form-text">Who holds title to this property.</div>
       </div>
     </div>
@@ -123,6 +86,20 @@ function BrokerOwnerStatus({
 }
 
 export default function DetailsStep({ category, details, onChange }: DetailsStepProps) {
+  const [houseTypes, setHouseTypes] = useState<{ id: string; name: string }[]>([])
+  const [landTypes, setLandTypes] = useState<{ id: string; name: string }[]>([])
+  const [propertyTypes, setPropertyTypes] = useState<{ id: string; name: string }[]>([])
+
+  useEffect(() => {
+    Promise.all([houseForSaleApi.getHouseTypes(), lookupApi.getLandTypes(), lookupApi.getPropertyTypes()])
+      .then(([nextHouseTypes, nextLandTypes, nextPropertyTypes]) => {
+        setHouseTypes(nextHouseTypes)
+        setLandTypes(nextLandTypes)
+        setPropertyTypes(nextPropertyTypes)
+      })
+      .catch((error) => console.error('Unable to load house types:', error))
+  }, [])
+
   if (category === 'house-sale') {
     const d = details as HouseDetails
     const set = (patch: Partial<HouseDetails>) => onChange({ ...d, ...patch })
@@ -172,17 +149,17 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
 
         <label className="form-label fw-semibold d-block">House type</label>
         <div className="d-flex flex-wrap gap-3 mb-3">
-          {HOUSE_TYPES.map((t) => (
-            <div className="form-check" key={t}>
+          {houseTypes.map((houseType) => (
+            <div className="form-check" key={houseType.id}>
               <input
                 className="form-check-input"
                 type="radio"
                 name="houseType"
-                id={`ht-${t}`}
-                checked={d.houseType === t}
-                onChange={() => set({ houseType: t })}
+                id={`ht-${houseType.id}`}
+                checked={d.houseType === houseType.id}
+                onChange={() => set({ houseType: houseType.id })}
               />
-              <label className="form-check-label" htmlFor={`ht-${t}`}>{t}</label>
+              <label className="form-check-label" htmlFor={`ht-${houseType.id}`}>{houseType.name}</label>
             </div>
           ))}
         </div>
@@ -278,17 +255,17 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
 
         <label className="form-label fw-semibold d-block">Land type</label>
         <div className="d-flex flex-wrap gap-3 mb-3">
-          {LAND_TYPES.map((t) => (
-            <div className="form-check" key={t}>
+          {landTypes.map((landType) => (
+            <div className="form-check" key={landType.id}>
               <input
                 className="form-check-input"
                 type="radio"
                 name="landType"
-                id={`lt-${t}`}
-                checked={d.landType === t}
-                onChange={() => set({ landType: t })}
+                id={`lt-${landType.id}`}
+                checked={d.landType === landType.id}
+                onChange={() => set({ landType: landType.id })}
               />
-              <label className="form-check-label" htmlFor={`lt-${t}`}>{t}</label>
+              <label className="form-check-label" htmlFor={`lt-${landType.id}`}>{landType.name}</label>
             </div>
           ))}
         </div>
@@ -364,30 +341,30 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
       <label className="form-label fw-semibold d-block">Commercial property type</label>
       <p className="text-muted small mb-2">Buildings and open land plots show different amenities.</p>
 
-      <div className="mb-2 text-muted small fw-semibold text-uppercase">Commercial Building</div>
+      {/* <div className="mb-2 text-muted small fw-semibold text-uppercase">Commercial Building</div>
       <div className="d-flex flex-wrap gap-2 mb-3">
-        {COMMERCIAL_BUILDING_TYPES.map((t) => (
+        {propertyTypes.map((propertyType) => (
           <button
             type="button"
-            key={t}
-            className={`btn btn-sm ${d.commercialType === t ? 'btn-oweru' : 'btn-outline-secondary'}`}
-            onClick={() => set({ commercialType: t })}
+            key={propertyType.id}
+            className={`btn btn-sm ${d.commercialType === propertyType.id ? 'btn-oweru' : 'btn-outline-secondary'}`}
+            onClick={() => set({ commercialType: propertyType.id })}
           >
-            {t}
+            {propertyType.name}
           </button>
         ))}
-      </div>
+      </div> */}
 
-      <div className="mb-2 text-muted small fw-semibold text-uppercase">Commercial Land</div>
+      <div className="mb-2 text-muted small fw-semibold text-uppercase">Commercial Land & Building </div>
       <div className="d-flex flex-wrap gap-2 mb-3">
-        {COMMERCIAL_LAND_TYPES.map((t) => (
+        {propertyTypes.map((propertyType) => (
           <button
             type="button"
-            key={t}
-            className={`btn btn-sm ${d.commercialType === t ? 'btn-oweru' : 'btn-outline-secondary'}`}
-            onClick={() => set({ commercialType: t })}
+            key={`land-${propertyType.id}`}
+            className={`btn btn-sm ${d.commercialType === propertyType.id ? 'btn-oweru' : 'btn-outline-secondary'}`}
+            onClick={() => set({ commercialType: propertyType.id })}
           >
-            {t}
+            {propertyType.name}
           </button>
         ))}
       </div>

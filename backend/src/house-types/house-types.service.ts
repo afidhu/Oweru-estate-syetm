@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateHouseTypeDto } from './dto/create-house-type.dto';
 import { UpdateHouseTypeDto } from './dto/update-house-type.dto';
-import { PrismaService } from 'src/prisma.config/prisma.service';
+import { PrismaService } from '../prisma.config/prisma.service';
 
 @Injectable()
 export class HouseTypesService {

@@ -1,6 +1,6 @@
 import { CreateDistrictDto } from './dto/create-district.dto';
 import { UpdateDistrictDto } from './dto/update-district.dto';
-import { PrismaService } from "../prisma.config/prisma.service";
+import { PrismaService } from '../prisma.config/prisma.service';
 export declare class DistrictsService {
     private readonly prisma;
     constructor(prisma: PrismaService);

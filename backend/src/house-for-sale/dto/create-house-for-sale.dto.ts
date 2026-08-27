@@ -1,4 +1,31 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsUUID, IsIn, IsInt, Min, Max, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsUUID, IsIn, IsInt, Min, Max, IsNumber, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { PersonInputDto } from '../../owners/dto/person-input.dto';
+
+class HouseImageInput {
+  @IsString()
+  url: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isCover?: boolean;
+}
+
+class HouseDocumentInput {
+  @IsString()
+  name: string;
+
+  @IsString()
+  url: string;
+
+  @IsString()
+  @IsOptional()
+  fileType?: string;
+
+  @IsInt()
+  @IsOptional()
+  sizeBytes?: number;
+}
 
 export class CreateHouseForSaleDto {
   @IsString()
@@ -49,6 +76,16 @@ export class CreateHouseForSaleDto {
   @IsOptional()
   ownerId?: string;
 
+  @ValidateNested()
+  @Type(() => PersonInputDto)
+  @IsOptional()
+  broker?: PersonInputDto;
+
+  @ValidateNested()
+  @Type(() => PersonInputDto)
+  @IsOptional()
+  owner?: PersonInputDto;
+
   @IsUUID()
   @IsOptional()
   regionId?: string;
@@ -85,4 +122,21 @@ export class CreateHouseForSaleDto {
   @IsOptional()
   @IsIn(['ENGLISH', 'KISWAHILI'])
   language?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  features?: string[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => HouseImageInput)
+  @IsOptional()
+  images?: HouseImageInput[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => HouseDocumentInput)
+  @IsOptional()
+  documents?: HouseDocumentInput[];
 }

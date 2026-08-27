@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateRegionDto } from './dto/create-region.dto';
 import { UpdateRegionDto } from './dto/update-region.dto';
-import { PrismaService } from 'src/prisma.config/prisma.service';
+import { PrismaService } from '../prisma.config/prisma.service';
 
 @Injectable()
 export class RegionsService {

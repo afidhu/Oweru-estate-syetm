@@ -1,4 +1,34 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsUUID, IsIn, Min, Max } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsUUID, IsIn, Min, Max, IsArray, IsBoolean, ValidateNested, IsInt } from 'class-validator';
+import { Type } from 'class-transformer';
+import { PersonInputDto } from '../../owners/dto/person-input.dto';
+
+class CommercialImageInput {
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isCover?: boolean;
+}
+
+class CommercialDocumentInput {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @IsString()
+  @IsOptional()
+  fileType?: string;
+
+  @IsInt()
+  @IsOptional()
+  sizeBytes?: number;
+}
 
 export class CreateCommercialAreaDto {
   @IsString()
@@ -53,6 +83,16 @@ export class CreateCommercialAreaDto {
   @IsOptional()
   ownerId?: string;
 
+  @ValidateNested()
+  @Type(() => PersonInputDto)
+  @IsOptional()
+  broker?: PersonInputDto;
+
+  @ValidateNested()
+  @Type(() => PersonInputDto)
+  @IsOptional()
+  owner?: PersonInputDto;
+
   @IsUUID()
   @IsOptional()
   regionId?: string;
@@ -89,4 +129,16 @@ export class CreateCommercialAreaDto {
   @IsOptional()
   @IsIn(['ENGLISH', 'KISWAHILI'])
   language?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CommercialImageInput)
+  @IsOptional()
+  images?: CommercialImageInput[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CommercialDocumentInput)
+  @IsOptional()
+  documents?: CommercialDocumentInput[];
 }

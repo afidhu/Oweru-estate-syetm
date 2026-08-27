@@ -19,16 +19,16 @@ export class CommercialAreaController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.commercialAreaService.findOne(+id);
+    return this.commercialAreaService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateCommercialAreaDto: UpdateCommercialAreaDto) {
-    return this.commercialAreaService.update(+id, updateCommercialAreaDto);
+    return this.commercialAreaService.update(id, updateCommercialAreaDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.commercialAreaService.remove(+id);
+    return this.commercialAreaService.remove(id);
   }
 }

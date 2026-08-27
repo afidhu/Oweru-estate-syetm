@@ -14,6 +14,8 @@ const class_validator_1 = require("class-validator");
 class CreateBrokerDto {
     name;
     phone;
+    nid;
+    tin;
     email;
 }
 exports.CreateBrokerDto = CreateBrokerDto;
@@ -24,9 +26,19 @@ __decorate([
 ], CreateBrokerDto.prototype, "name", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateBrokerDto.prototype, "phone", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateBrokerDto.prototype, "nid", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateBrokerDto.prototype, "tin", void 0);
 __decorate([
     (0, class_validator_1.IsEmail)(),
     (0, class_validator_1.IsOptional)(),

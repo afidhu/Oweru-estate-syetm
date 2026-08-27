@@ -14,6 +14,8 @@ const class_validator_1 = require("class-validator");
 class CreateOwnerDto {
     name;
     phone;
+    nid;
+    tin;
     email;
 }
 exports.CreateOwnerDto = CreateOwnerDto;
@@ -24,9 +26,19 @@ __decorate([
 ], CreateOwnerDto.prototype, "name", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateOwnerDto.prototype, "phone", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOwnerDto.prototype, "nid", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOwnerDto.prototype, "tin", void 0);
 __decorate([
     (0, class_validator_1.IsEmail)(),
     (0, class_validator_1.IsOptional)(),

@@ -5,6 +5,7 @@ CREATE TABLE `PropertyCategory` (
     `slug` VARCHAR(191) NOT NULL,
     `description` VARCHAR(191) NULL,
     `icon` VARCHAR(191) NULL,
+    `accent` VARCHAR(191) NULL DEFAULT '#3B6FE0',
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -74,7 +75,9 @@ CREATE TABLE `Ward` (
 CREATE TABLE `Broker` (
     `id` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NOT NULL,
-    `phone` VARCHAR(191) NULL,
+    `phone` VARCHAR(191) NOT NULL,
+    `nid` VARCHAR(191) NULL,
+    `tin` VARCHAR(191) NULL,
     `email` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
@@ -86,7 +89,9 @@ CREATE TABLE `Broker` (
 CREATE TABLE `Owner` (
     `id` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NOT NULL,
-    `phone` VARCHAR(191) NULL,
+    `phone` VARCHAR(191) NOT NULL,
+    `nid` VARCHAR(191) NULL,
+    `tin` VARCHAR(191) NULL,
     `email` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
@@ -136,7 +141,7 @@ CREATE TABLE `HouseForSaleFeature` (
 CREATE TABLE `HouseForSaleImage` (
     `id` VARCHAR(191) NOT NULL,
     `houseId` VARCHAR(191) NOT NULL,
-    `url` VARCHAR(191) NOT NULL,
+    `url` LONGTEXT NOT NULL,
     `isCover` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -148,7 +153,7 @@ CREATE TABLE `HouseForSaleDocument` (
     `id` VARCHAR(191) NOT NULL,
     `houseId` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NOT NULL,
-    `url` VARCHAR(191) NOT NULL,
+    `url` LONGTEXT NOT NULL,
     `fileType` VARCHAR(191) NULL,
     `sizeBytes` INTEGER NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -196,7 +201,7 @@ CREATE TABLE `LandForSaleFeature` (
 CREATE TABLE `LandForSaleImage` (
     `id` VARCHAR(191) NOT NULL,
     `landId` VARCHAR(191) NOT NULL,
-    `url` VARCHAR(191) NOT NULL,
+    `url` LONGTEXT NOT NULL,
     `isCover` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -208,7 +213,7 @@ CREATE TABLE `LandForSaleDocument` (
     `id` VARCHAR(191) NOT NULL,
     `landId` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NOT NULL,
-    `url` VARCHAR(191) NOT NULL,
+    `url` LONGTEXT NOT NULL,
     `fileType` VARCHAR(191) NULL,
     `sizeBytes` INTEGER NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -250,7 +255,7 @@ CREATE TABLE `CommercialArea` (
 CREATE TABLE `CommercialAreaImage` (
     `id` VARCHAR(191) NOT NULL,
     `commercialId` VARCHAR(191) NOT NULL,
-    `url` VARCHAR(191) NOT NULL,
+    `url` LONGTEXT NOT NULL,
     `isCover` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -262,7 +267,7 @@ CREATE TABLE `CommercialAreaDocument` (
     `id` VARCHAR(191) NOT NULL,
     `commercialId` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NOT NULL,
-    `url` VARCHAR(191) NOT NULL,
+    `url` LONGTEXT NOT NULL,
     `fileType` VARCHAR(191) NULL,
     `sizeBytes` INTEGER NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

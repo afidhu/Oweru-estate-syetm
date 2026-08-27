@@ -1,6 +1,6 @@
 import { CreateLandTypeDto } from './dto/create-land-type.dto';
 import { UpdateLandTypeDto } from './dto/update-land-type.dto';
-import { PrismaService } from "../prisma.config/prisma.service";
+import { PrismaService } from '../prisma.config/prisma.service';
 export declare class LandTypesService {
     private readonly prisma;
     constructor(prisma: PrismaService);

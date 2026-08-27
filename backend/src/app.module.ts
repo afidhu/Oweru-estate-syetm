@@ -28,9 +28,10 @@ import { CommercialAreaModule } from './commercial-area/commercial-area.module';
 import { CommercialAreaPropertyTypeModule } from './commercial-area-property-type/commercial-area-property-type.module';
 import { CommercialAreaImageModule } from './commercial-area-image/commercial-area-image.module';
 import { CommercialAreaDocumentModule } from './commercial-area-document/commercial-area-document.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
-  imports: [ PrismaModule,AuthModule, UsersModule, PropertyCategoriesModule, HouseTypesModule, LandTypesModule, RegionsModule, DistrictsModule, WardsModule, BrokersModule, OwnersModule, CommissionsModule, HouseForSaleModule, HouseForSaleFeatureModule, HouseForSaleImageModule, HouseForSaleDocumentModule, LandForSaleModule, LandForSaleFeatureModule, LandForSaleImageModule, LandForSaleDocumentModule, CommercialAreaModule, CommercialAreaPropertyTypeModule, CommercialAreaImageModule, CommercialAreaDocumentModule,],
+  imports: [ PrismaModule,AuthModule, UsersModule, PropertyCategoriesModule, HouseTypesModule, LandTypesModule, RegionsModule, DistrictsModule, WardsModule, BrokersModule, OwnersModule, CommissionsModule, HouseForSaleModule, HouseForSaleFeatureModule, HouseForSaleImageModule, HouseForSaleDocumentModule, LandForSaleModule, LandForSaleFeatureModule, LandForSaleImageModule, LandForSaleDocumentModule, CommercialAreaModule, CommercialAreaPropertyTypeModule, CommercialAreaImageModule, CommercialAreaDocumentModule, UploadsModule,],
   controllers: [AppController],
   providers: [ PrismaService,AppService],
 })

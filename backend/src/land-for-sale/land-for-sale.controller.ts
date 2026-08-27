@@ -19,16 +19,16 @@ export class LandForSaleController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.landForSaleService.findOne(+id);
+    return this.landForSaleService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateLandForSaleDto: UpdateLandForSaleDto) {
-    return this.landForSaleService.update(+id, updateLandForSaleDto);
+    return this.landForSaleService.update(id, updateLandForSaleDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.landForSaleService.remove(+id);
+    return this.landForSaleService.remove(id);
   }
 }

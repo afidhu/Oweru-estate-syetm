@@ -1,6 +1,6 @@
 import { CreateCommissionDto } from './dto/create-commission.dto';
 import { UpdateCommissionDto } from './dto/update-commission.dto';
-import { PrismaService } from "../prisma.config/prisma.service";
+import { PrismaService } from '../prisma.config/prisma.service';
 export declare class CommissionsService {
     private readonly prisma;
     constructor(prisma: PrismaService);

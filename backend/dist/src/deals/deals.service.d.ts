@@ -1,6 +1,6 @@
 import { CreateDealDto } from './dto/create-deal.dto';
 import { UpdateDealDto } from './dto/update-deal.dto';
-import { PrismaService } from "../prisma.config/prisma.service";
+import { PrismaService } from '../prisma.config/prisma.service';
 export declare class DealsService {
     private readonly prisma;
     constructor(prisma: PrismaService);

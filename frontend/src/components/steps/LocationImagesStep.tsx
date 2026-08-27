@@ -1,13 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
-import type { LocationData } from "../../types";
-import {
-  TANZANIA_LOCATIONS,
-  getDistrictsByRegion,
-  getWardsByDistrict,
-} from "../../data/tanzaniaLocations";
-import { DistrictItem, districtsData } from "../../data/districts";
+import type { LocationData, LookupItem } from "../../types";
 import LocationForm from "../shared/LocationForm";
+import { houseForSaleApi } from "../../services/api";
 
 interface LocationImagesStepProps {
   location: LocationData;
@@ -27,18 +22,21 @@ export default function LocationImagesStep({
   const markerRef = useRef<L.Marker | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
 
-  const allRegions = TANZANIA_LOCATIONS.map((r) => r.region);
-  const availableDistricts = location.region
-    ? getDistrictsByRegion(location.region)
-    : [];
-  const availableWards =
-    location.region && location.district
-      ? getWardsByDistrict(location.region, location.district)
-      : [];
-  // Initialize state directly with the imported array
-  const [allDistricts, setAllDistricts] =
-    useState<DistrictItem[]>(districtsData);
-  const [selectedDistrict, setSelectedDistrict] = useState<string>("");
+  const [regions, setRegions] = useState<LookupItem[]>([]);
+  const [districts, setDistricts] = useState<(LookupItem & { regionId: string })[]>([]);
+  const [wards, setWards] = useState<(LookupItem & { districtId: string })[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      houseForSaleApi.getRegions(),
+      houseForSaleApi.getDistricts(),
+      houseForSaleApi.getWards(),
+    ]).then(([nextRegions, nextDistricts, nextWards]) => {
+      setRegions(nextRegions);
+      setDistricts(nextDistricts);
+      setWards(nextWards);
+    }).catch((error) => console.error("Unable to load location options:", error));
+  }, []);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -61,7 +59,7 @@ export default function LocationImagesStep({
   useEffect(() => {
     if (!mapInstanceRef.current || !isMapReady) return;
 
-    if (location.lat && location.lng) {
+    if (location.lat !== null && location.lng !== null) {
       const position: L.LatLngExpression = [location.lat, location.lng];
 
       if (markerRef.current) {
@@ -133,7 +131,7 @@ export default function LocationImagesStep({
       <h5 className="mb-1">Location &amp; Images</h5>
       <p className="text-muted mb-4">Region, GPS and photos</p>
 
-     <LocationForm />
+      <LocationForm location={location} onChange={onChange} regions={regions} districts={districts} wards={wards} />
 
       <label className="form-label fw-semibold">Location</label>
       <div className="input-group mb-2">

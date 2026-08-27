@@ -1,6 +1,6 @@
 import { CreateRegionDto } from './dto/create-region.dto';
 import { UpdateRegionDto } from './dto/update-region.dto';
-import { PrismaService } from "../prisma.config/prisma.service";
+import { PrismaService } from '../prisma.config/prisma.service';
 export declare class RegionsService {
     private readonly prisma;
     constructor(prisma: PrismaService);

@@ -1,4 +1,3 @@
-import { getCategory } from '../../data/categories'
 import type {
   CategoryId, CommercialDetails, DetailsData, HouseDetails, LandDetails, LocationData,
 } from '../../types'
@@ -19,7 +18,7 @@ function Field({ label, value }: { label: string; value: string }) {
 }
 
 export default function ReviewStep({ category, details, location }: ReviewStepProps) {
-  const cat = getCategory(category)
+  const categoryTitle = category === 'house-sale' ? 'House for Sale' : category
 
   let typeLabel = ''
   let typeValue = ''
@@ -54,14 +53,14 @@ export default function ReviewStep({ category, details, location }: ReviewStepPr
       <p className="text-muted mb-4">Review the details below, then submit — or go back to edit.</p>
 
       <div className="row g-3">
-        <Field label="Category" value={cat.title} />
+        <Field label="Category" value={categoryTitle} />
         <Field label="Property title" value={propertyTitle} />
         <Field label="Sale price (TZS)" value={salePrice ? Number(salePrice).toLocaleString() : ''} />
         <Field label="Size" value={sizeValue} />
         <Field label={typeLabel} value={typeValue} />
         <Field label="Status" value={status} />
-        <Field label="Broker" value={broker || 'Unassigned'} />
-        <Field label="Owner" value={owner || 'Not registered'} />
+        <Field label="Broker" value={broker.name ? `${broker.name} (${broker.phone})` : 'Unassigned'} />
+        <Field label="Owner" value={owner.name ? `${owner.name} (${owner.phone})` : 'Not registered'} />
         <Field label="Region / District" value={[location.region, location.district].filter(Boolean).join(' / ')} />
         <Field label="Ward / Exact location" value={[location.ward, location.exactLocation].filter(Boolean).join(' / ')} />
         <Field label="Images" value={location.images.length ? `${location.images.length} file(s)` : 'None'} />

@@ -8,13 +8,36 @@ export class HouseForSaleService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(createHouseForSaleDto: CreateHouseForSaleDto) {
+    const { features, images, documents, broker, owner, brokerId, districtId,regionId,wardId,ownerId,propertyCategoryId,houseTypeId, ...houseData } = createHouseForSaleDto;
     return this.prisma.houseForSale.create({
-      data: createHouseForSaleDto as any,
+      data: {
+        ...houseData,
+         houseType:houseTypeId ? { connect: { id:houseTypeId } } : undefined,
+         propertyCategory:propertyCategoryId ? { connect: { id:propertyCategoryId } } : undefined,
+         district:districtId ? { connect: { id:districtId } } : undefined,
+         region:regionId ? { connect: { id:regionId } } : undefined,
+         ward:wardId ? { connect: { id:wardId } } : undefined,
+        broker: broker ? { create: broker } : brokerId ? { connect: { id: brokerId } } : undefined,
+        owner: owner ? { create: owner } : ownerId ? { connect: { id: ownerId } } : undefined,
+        features: features?.length ? { create: features.map((name) => ({ name })) } : undefined,
+        images: images?.length ? { create: images } : undefined,
+        documents: documents?.length ? { create: documents } : undefined,
+      } as any,
+      include: { houseType: true, broker: true, owner: true, features: true, images: true, documents: true },
     });
   }
 
   findAll() {
-    return this.prisma.houseForSale.findMany();
+    return this.prisma.houseForSale.findMany({
+      include:{
+        houseType: true,
+        broker: true,
+        owner: true,
+        features: true,
+        images: true,
+        documents: true,
+      }
+    });
   }
 
   findOne(id: string) {

@@ -1,6 +1,6 @@
 import { CreateHouseTypeDto } from './dto/create-house-type.dto';
 import { UpdateHouseTypeDto } from './dto/update-house-type.dto';
-import { PrismaService } from "../prisma.config/prisma.service";
+import { PrismaService } from '../prisma.config/prisma.service';
 export declare class HouseTypesService {
     private readonly prisma;
     constructor(prisma: PrismaService);

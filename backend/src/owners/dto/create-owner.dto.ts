@@ -6,8 +6,16 @@ export class CreateOwnerDto {
   name: string;
 
   @IsString()
+  @IsNotEmpty()
+  phone: string;
+
+  @IsString()
   @IsOptional()
-  phone?: string;
+  nid?: string;
+
+  @IsString()
+  @IsOptional()
+  tin?: string;
 
   @IsEmail()
   @IsOptional()

@@ -1,6 +1,6 @@
 import { CreateWardDto } from './dto/create-ward.dto';
 import { UpdateWardDto } from './dto/update-ward.dto';
-import { PrismaService } from "../prisma.config/prisma.service";
+import { PrismaService } from '../prisma.config/prisma.service';
 export declare class WardsService {
     private readonly prisma;
     constructor(prisma: PrismaService);
