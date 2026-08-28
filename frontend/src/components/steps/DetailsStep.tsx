@@ -3,6 +3,7 @@ import { houseForSaleApi, lookupApi } from '../../services/api'
 import type {
   CategoryId, CommercialDetails, DetailsData, HouseDetails, LandDetails, PersonDetails,
 } from '../../types'
+import { useLanguage } from '../../i18n'
 const HOUSE_FEATURES = ['Road Access', 'Electricity', 'Water Supply', 'Borehole', 'Parking', 'Security', 'CCTV', 'Fence', 'Furnished', 'Fitted Kitchen', 'Outside Kitchen', 'Dining Room', 'Sitting Room', 'En-suite Bedrooms', 'Balcony', 'Tiled Floor', 'Store Room', 'Garden', 'Swimming Pool', 'Servant Quarter', 'Generator', 'Air Conditioning', 'Other']
 const SIZE_UNITS = ['sqm', 'acre', 'plot', 'metre', 'feet']
 const LAND_TYPES = ['Residential', 'Commercial', 'Agricultural', 'Mixed Use']
@@ -19,6 +20,7 @@ interface DetailsStepProps {
 function FeatureChips({
   options, selected, onToggle,
 }: { options: string[]; selected: string[]; onToggle: (v: string) => void }) {
+  const { tr } = useLanguage()
   return (
     <div className="row g-2">
       {options.map((opt) => {
@@ -32,7 +34,7 @@ function FeatureChips({
                 checked={checked}
                 onChange={() => onToggle(opt)}
               />
-              {opt}
+              {tr(opt)}
             </label>
           </div>
         )
@@ -49,12 +51,13 @@ function BrokerOwnerStatus({
   owner: PersonDetails
   onField: (field: 'status' | 'broker' | 'owner', value: string | PersonDetails) => void
 }) {
+  const { tr } = useLanguage()
   const personFields = (person: PersonDetails, field: 'broker' | 'owner') => (
     <>
-      <input className="form-control" placeholder="Full name" value={person.name} required onChange={(e) => onField(field, { ...person, name: e.target.value })} />
-      <input className="form-control mt-2" placeholder="WhatsApp phone number (+255)" value={person.phone} required onChange={(e) => onField(field, { ...person, phone: e.target.value })} />
-      <input className="form-control mt-2" placeholder="NIDA (optional)" value={person.nid} onChange={(e) => onField(field, { ...person, nid: e.target.value })} />
-      <input className="form-control mt-2" placeholder="TIN (optional)" value={person.tin} onChange={(e) => onField(field, { ...person, tin: e.target.value })} />
+      <input className="form-control" placeholder={tr('Full name')} value={person.name} required onChange={(e) => onField(field, { ...person, name: e.target.value })} />
+      <input className="form-control mt-2" placeholder={tr('WhatsApp phone number (+255)')} value={person.phone} required onChange={(e) => onField(field, { ...person, phone: e.target.value })} />
+      <input className="form-control mt-2" placeholder={tr('NIDA (optional)')} value={person.nid} onChange={(e) => onField(field, { ...person, nid: e.target.value })} />
+      <input className="form-control mt-2" placeholder={tr('TIN (optional)')} value={person.tin} onChange={(e) => onField(field, { ...person, tin: e.target.value })} />
     </>
   )
   return (
@@ -70,22 +73,23 @@ function BrokerOwnerStatus({
         </select>
       </div> */}
       <div className="col-md-6">
-        <label className="form-label fw-semibold">Broker Info</label> <br />
+        <label className="form-label fw-semibold">{tr('Broker Info')}</label> <br />
 
         {personFields(broker, 'broker')}
       </div>
 
       
       <div className="col-md-6">
-        <label className="form-label fw-semibold">Owner Info</label>
+        <label className="form-label fw-semibold">{tr('Owner Info')}</label>
         {personFields(owner, 'owner')}
-        <div className="form-text">Who holds title to this property.</div>
+        <div className="form-text">{tr('Who holds title to this property.')}</div>
       </div>
     </div>
   )
 }
 
 export default function DetailsStep({ category, details, onChange }: DetailsStepProps) {
+  const { tr } = useLanguage()
   const [houseTypes, setHouseTypes] = useState<{ id: string; name: string }[]>([])
   const [landTypes, setLandTypes] = useState<{ id: string; name: string }[]>([])
   const [propertyTypes, setPropertyTypes] = useState<{ id: string; name: string }[]>([])
@@ -106,10 +110,10 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
 
     return (
       <div>
-        <h5 className="mb-1">House for Sale</h5>
-        <p className="text-muted mb-4">Provide details about the house.</p>
+        <h5 className="mb-1">{tr('House for Sale')}</h5>
+        <p className="text-muted mb-4">{tr('Provide details about the house.')}</p>
 
-        <label className="form-label fw-semibold">Property title</label>
+        <label className="form-label fw-semibold">{tr('Property title')}</label>
         <input
           className="form-control mb-3"
           placeholder="e.g. 4 Bedroom House for Sale in Masaki"
@@ -119,7 +123,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
 
         <div className="row g-3 mb-3">
           <div className="col-md-8">
-            <label className="form-label fw-semibold">Sale price (TZS)</label>
+            <label className="form-label fw-semibold">{tr('Sale price (TZS)')}</label>
             <input
               type="number"
               className="form-control"
@@ -128,7 +132,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
             />
           </div>
           <div className="col-md-4">
-            <label className="form-label fw-semibold">Size unit</label>
+            <label className="form-label fw-semibold">{tr('Size unit')}</label>
             <select
               className="form-select"
               value={d.sizeUnit}
@@ -140,14 +144,14 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
           </div>
         </div>
 
-        <label className="form-label fw-semibold">Size</label>
+        <label className="form-label fw-semibold">{tr('Size')}</label>
         <input
           className="form-control mb-3"
           value={d.size}
           onChange={(e) => set({ size: e.target.value })}
         />
 
-        <label className="form-label fw-semibold d-block">House type</label>
+        <label className="form-label fw-semibold d-block">{tr('House type')}</label>
         <div className="d-flex flex-wrap gap-3 mb-3">
           {houseTypes.map((houseType) => (
             <div className="form-check" key={houseType.id}>
@@ -166,7 +170,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
 
         <div className="row g-3 mb-3">
           <div className="col-md-6">
-            <label className="form-label fw-semibold">Bedrooms</label>
+            <label className="form-label fw-semibold">{tr('Bedrooms')}</label>
             <input
               type="number"
               className="form-control"
@@ -175,7 +179,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
             />
           </div>
           <div className="col-md-6">
-            <label className="form-label fw-semibold">Bathrooms</label>
+            <label className="form-label fw-semibold">{tr('Bathrooms')}</label>
             <input
               type="number"
               className="form-control"
@@ -185,7 +189,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
           </div>
         </div>
 
-        <label className="form-label fw-semibold d-block">Features &amp; amenities</label>
+        <label className="form-label fw-semibold d-block">{tr('Features & amenities')}</label>
         <FeatureChips
           options={HOUSE_FEATURES}
           selected={d.features}
@@ -212,10 +216,10 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
 
     return (
       <div>
-        <h5 className="mb-1">Land for Sale</h5>
-        <p className="text-muted mb-4">Provide details about the land.</p>
+        <h5 className="mb-1">{tr('Land for Sale')}</h5>
+        <p className="text-muted mb-4">{tr('Provide details about the land.')}</p>
 
-        <label className="form-label fw-semibold">Property title</label>
+        <label className="form-label fw-semibold">{tr('Property title')}</label>
         <input
           className="form-control mb-3"
           placeholder="e.g. 2-Acre Plot for Sale in Bagamoyo"
@@ -225,7 +229,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
 
         <div className="row g-3 mb-3">
           <div className="col-md-8">
-            <label className="form-label fw-semibold">Sale price (TZS)</label>
+            <label className="form-label fw-semibold">{tr('Sale price (TZS)')}</label>
             <input
               type="number"
               className="form-control"
@@ -234,7 +238,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
             />
           </div>
           <div className="col-md-4">
-            <label className="form-label fw-semibold">Size unit</label>
+            <label className="form-label fw-semibold">{tr('Size unit')}</label>
             <select
               className="form-select"
               value={d.sizeUnit}
@@ -246,14 +250,14 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
           </div>
         </div>
 
-        <label className="form-label fw-semibold">Size</label>
+        <label className="form-label fw-semibold">{tr('Size')}</label>
         <input
           className="form-control mb-3"
           value={d.size}
           onChange={(e) => set({ size: e.target.value })}
         />
 
-        <label className="form-label fw-semibold d-block">Land type</label>
+        <label className="form-label fw-semibold d-block">{tr('Land type')}</label>
         <div className="d-flex flex-wrap gap-3 mb-3">
           {landTypes.map((landType) => (
             <div className="form-check" key={landType.id}>
@@ -270,7 +274,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
           ))}
         </div>
 
-        <label className="form-label fw-semibold d-block">Features &amp; amenities</label>
+        <label className="form-label fw-semibold d-block">{tr('Features & amenities')}</label>
         <FeatureChips
           options={LAND_FEATURES}
           selected={d.features}
@@ -297,10 +301,10 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
 
   return (
     <div>
-      <h5 className="mb-1">Commercial Area for Sale</h5>
-      <p className="text-muted mb-4">Provide details about the property.</p>
+      <h5 className="mb-1">{tr('Commercial Area for Sale')}</h5>
+      <p className="text-muted mb-4">{tr('Provide details about the property.')}</p>
 
-      <label className="form-label fw-semibold">Property title</label>
+      <label className="form-label fw-semibold">{tr('Property title')}</label>
       <input
         className="form-control mb-3"
         placeholder="e.g. Office Building for Sale in Upanga"
@@ -310,7 +314,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
 
       <div className="row g-3 mb-3">
         <div className="col-md-8">
-          <label className="form-label fw-semibold">Sale price (TZS)</label>
+          <label className="form-label fw-semibold">{tr('Sale price (TZS)')}</label>
           <input
             type="number"
             className="form-control"
@@ -319,7 +323,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
           />
         </div>
         <div className="col-md-4">
-          <label className="form-label fw-semibold">Size unit</label>
+          <label className="form-label fw-semibold">{tr('Size unit')}</label>
           <select
             className="form-select"
             value={d.sizeUnit}
@@ -331,15 +335,15 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
         </div>
       </div>
 
-      <label className="form-label fw-semibold">Size</label>
+      <label className="form-label fw-semibold">{tr('Size')}</label>
       <input
         className="form-control mb-3"
         value={d.size}
         onChange={(e) => set({ size: e.target.value })}
       />
 
-      <label className="form-label fw-semibold d-block">Commercial property type</label>
-      <p className="text-muted small mb-2">Buildings and open land plots show different amenities.</p>
+      <label className="form-label fw-semibold d-block">{tr('Commercial property type')}</label>
+      <p className="text-muted small mb-2">{tr('Buildings and open land plots show different amenities.')}</p>
 
       {/* <div className="mb-2 text-muted small fw-semibold text-uppercase">Commercial Building</div>
       <div className="d-flex flex-wrap gap-2 mb-3">
@@ -355,7 +359,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
         ))}
       </div> */}
 
-      <div className="mb-2 text-muted small fw-semibold text-uppercase">Commercial Land & Building </div>
+      <div className="mb-2 text-muted small fw-semibold text-uppercase">{tr('Commercial Land & Building')}</div>
       <div className="d-flex flex-wrap gap-2 mb-3">
         {propertyTypes.map((propertyType) => (
           <button

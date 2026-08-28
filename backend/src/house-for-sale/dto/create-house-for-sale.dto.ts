@@ -27,6 +27,19 @@ class HouseDocumentInput {
   sizeBytes?: number;
 }
 
+class HouseVideoInput {
+  @IsString()
+  url: string;
+
+  @IsString()
+  @IsOptional()
+  fileType?: string;
+
+  @IsInt()
+  @IsOptional()
+  sizeBytes?: number;
+}
+
 export class CreateHouseForSaleDto {
   @IsString()
   @IsNotEmpty()
@@ -139,4 +152,10 @@ export class CreateHouseForSaleDto {
   @Type(() => HouseDocumentInput)
   @IsOptional()
   documents?: HouseDocumentInput[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => HouseVideoInput)
+  @IsOptional()
+  videos?: HouseVideoInput[];
 }

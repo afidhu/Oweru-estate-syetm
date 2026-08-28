@@ -1,8 +1,9 @@
+import { getUploadUrl, houseForSaleApi, uploadApi } from "../../services/api";
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import type { LocationData, LookupItem } from "../../types";
 import LocationForm from "../shared/LocationForm";
-import { houseForSaleApi } from "../../services/api";
+import { useLanguage } from "../../i18n";
 
 interface LocationImagesStepProps {
   location: LocationData;
@@ -15,12 +16,15 @@ export default function LocationImagesStep({
   descriptionHint,
   onChange,
 }: LocationImagesStepProps) {
+  const { tr } = useLanguage();
   const set = (patch: Partial<LocationData>) =>
     onChange({ ...location, ...patch });
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [videoError, setVideoError] = useState("");
 
   const [regions, setRegions] = useState<LookupItem[]>([]);
   const [districts, setDistricts] = useState<(LookupItem & { regionId: string })[]>([]);
@@ -108,9 +112,32 @@ export default function LocationImagesStep({
     }
   };
 
+  const handleVideoChange = async (file: File | undefined) => {
+        if (!file) return;
+        if (file.size >= 30 * 1024 * 1024) {
+          setVideoError(tr("Video must be less than 30 MB."));
+          return;
+        }
+        if (!file.type.startsWith("video/") && !/\.(mp4|mkv|mov|avi|webm|m4v|3gp)$/i.test(file.name)) {
+          setVideoError(tr("Please select a video file."));
+          return;
+        }
+
+        setVideoError("");
+        setVideoProgress(0);
+        try {
+          const [uploadedVideo] = await uploadApi.upload([file], setVideoProgress);
+          set({ videoUrl: uploadedVideo.url, videoFileType: uploadedVideo.fileType || file.type, videoSizeBytes: uploadedVideo.sizeBytes || file.size });
+        } catch (error) {
+          console.error("Video upload error:", error);
+          setVideoError(tr("Video upload failed. Please try again."));
+          setVideoProgress(0);
+        }
+  };
+
   const handleMyLocation = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
+      alert(tr("Geolocation is not supported by your browser"));
       return;
     }
 
@@ -121,19 +148,19 @@ export default function LocationImagesStep({
       },
       (error) => {
         console.error("Geolocation error:", error);
-        alert("Unable to retrieve your location");
+        alert(tr("Unable to retrieve your location"));
       },
     );
   };
 
   return (
     <div>
-      <h5 className="mb-1">Location &amp; Images</h5>
-      <p className="text-muted mb-4">Region, GPS and photos</p>
+      <h5 className="mb-1">{tr("Location & Images")}</h5>
+      <p className="text-muted mb-4">{tr("Region, GPS and photos")}</p>
 
       <LocationForm location={location} onChange={onChange} regions={regions} districts={districts} wards={wards} />
 
-      <label className="form-label fw-semibold">Location</label>
+      <label className="form-label fw-semibold">{tr("Location")}</label>
       <div className="input-group mb-2">
         <input
           className="form-control"
@@ -146,14 +173,14 @@ export default function LocationImagesStep({
           type="button"
           onClick={handleSearch}
         >
-          <i className="bi bi-search me-1" /> Search
+            <i className="bi bi-search me-1" /> {tr("Search")}
         </button>
         <button
           className="btn btn-outline-secondary"
           type="button"
           onClick={handleMyLocation}
         >
-          <i className="bi bi-geo-alt me-1" /> My location
+            <i className="bi bi-geo-alt me-1" /> {tr("My location")}
         </button>
       </div>
 
@@ -165,7 +192,7 @@ export default function LocationImagesStep({
         {!isMapReady && (
           <span>
             <i className="bi bi-map me-1" />
-            Loading map...
+            {tr("Loading map...")}
           </span>
         )}
       </div>
@@ -186,14 +213,14 @@ export default function LocationImagesStep({
             className={`btn ${location.descriptionLang === "en" ? "btn-oweru" : "btn-outline-secondary"}`}
             onClick={() => set({ descriptionLang: "en" })}
           >
-            English 
+            {tr("English")}
           </button>/
           <button
             type="button"
             className={`btn ${location.descriptionLang === "sw" ? "btn-oweru" : "btn-outline-secondary"}`}
             onClick={() => set({ descriptionLang: "sw" })}
           >
-            Kiswahili
+            {tr("Kiswahili")}
           </button>
         </div>
       </div>
@@ -204,17 +231,14 @@ export default function LocationImagesStep({
         value={location.description}
         onChange={(e) => set({ description: e.target.value })}
       />
-      <p className="text-muted small mb-4">
-        Built from the category, sub-type, size, rooms, amenities, location and
-        price on this form. Edit it if you want to.
-      </p>
+      <p className="text-muted small mb-4">{tr("Built from the category, sub-type, size, rooms, amenities, location and price on this form. Edit it if you want to.")}</p>
 
-      <label className="form-label fw-semibold d-block">Property images</label>
+      <label className="form-label fw-semibold d-block">{tr("Property images")}</label>
       <label className="oweru-upload-box d-block mb-1">
         <i className="bi bi-image fs-4 d-block mb-1" />
         {location.images.length > 0
           ? `${location.images.length} image(s) selected`
-          : "Add images"}
+            : tr("Add images")}
         <input
           type="file"
           accept="image/*"
@@ -224,14 +248,35 @@ export default function LocationImagesStep({
         />
       </label>
 
+      <label className="form-label fw-semibold d-block mt-3">{tr("Property video")}</label>
+      <label className="oweru-upload-box d-block mb-1">
+        <i className="bi bi-camera-video fs-4 d-block mb-1" />
+        {location.videoUrl ? tr("Video uploaded") : tr("Add one video")}
+        <input
+          type="file"
+          accept="video/*,.mkv,.avi,.mov,.webm,.m4v,.3gp"
+          hidden
+          onChange={(e) => handleVideoChange(e.target.files?.[0])}
+        />
+      </label>
+      {videoProgress > 0 && videoProgress < 100 && (
+        <div className="progress mb-2" role="progressbar" aria-label={tr("Video upload progress")} aria-valuenow={videoProgress} aria-valuemin={0} aria-valuemax={100}>
+          <div className="progress-bar" style={{ width: `${videoProgress}%` }}>{videoProgress}%</div>
+        </div>
+      )}
+      {videoError && <div className="text-danger small mb-2">{videoError}</div>}
+      {location.videoUrl && (
+        <video className="oweru-video-preview mb-3" controls preload="metadata" src={getUploadUrl(location.videoUrl)} />
+      )}
+
       <label className="form-label fw-semibold d-block mt-3">
-        Verified documents
+        {tr("Verified documents")}
       </label>
       <label className="btn btn-outline-secondary btn-sm mb-1">
         <i className="bi bi-paperclip me-1" />
         {location.documents.length > 0
           ? `${location.documents.length} document(s) attached`
-          : "Attach documents"}
+            : tr("Attach documents")}
         <input
           type="file"
           accept="application/pdf,image/*"
@@ -240,10 +285,7 @@ export default function LocationImagesStep({
           onChange={(e) => set({ documents: Array.from(e.target.files ?? []) })}
         />
       </label>
-      <p className="text-muted small mb-0">
-        Title deed, survey plan, sale agreement — PDF or a photo, up to 15 MB
-        each. They upload when the record is saved, and more can be added later.
-      </p>
+      <p className="text-muted small mb-0">{tr("Title deed, survey plan, sale agreement — PDF or a photo, up to 15 MB each. They upload when the record is saved, and more can be added later.")}</p>
     </div>
   );
 }

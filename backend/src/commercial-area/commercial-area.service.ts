@@ -11,6 +11,7 @@ export class CommercialAreaService {
     const {
       images,
       documents,
+      videos,
       broker,
       owner,
       brokerId,
@@ -34,17 +35,18 @@ export class CommercialAreaService {
         ward: wardId ? { connect: { id: wardId } } : undefined,
         images: images?.length ? { create: images } : undefined,
         documents: documents?.length ? { create: documents } : undefined,
+        videos: videos?.length ? { create: videos } : undefined,
       } as any,
-      include: { broker: true, owner: true, images: true, documents: true },
+      include: { broker: true, owner: true, images: true, documents: true, videos: true },
     });
   }
 
   findAll() {
-    return this.prisma.commercialArea.findMany({ include: { images: true, documents: true } });
+    return this.prisma.commercialArea.findMany({ include: { images: true, documents: true, videos: true } });
   }
 
   findOne(id: string) {
-    return this.prisma.commercialArea.findUnique({ where: { id }, include: { images: true, documents: true } });
+    return this.prisma.commercialArea.findUnique({ where: { id }, include: { propertyType: true, propertyCategory: true, broker: true, owner: true, region: true, district: true, ward: true, images: true, documents: true, videos: true } });
   }
 
   update(id: string, updateCommercialAreaDto: UpdateCommercialAreaDto) {

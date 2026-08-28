@@ -10,10 +10,11 @@ import ReviewStep from '../steps/ReviewStep';
 import CategoryGrid from '../shared/CategoryGrid';
 import Stepper from '../shared/Stepper';
 import Navbar from '../shared/Navbar';
+import { useLanguage } from '../../i18n'
 
 const emptyLocation: LocationData = {
   region: '', regionId: '', district: '', districtId: '', ward: '', wardId: '', exactLocation: '', searchQuery: '',
-  lat: null, lng: null, description: '', descriptionLang: 'en', images: [], documents: [],
+  lat: null, lng: null, description: '', descriptionLang: 'sw', images: [], documents: [], videoUrl: '', videoFileType: '', videoSizeBytes: null,
 }
 
 function makeDetails(category: CategoryId): DetailsData {
@@ -29,14 +30,15 @@ function makeDetails(category: CategoryId): DetailsData {
 }
 
 const DESCRIPTION_HINTS: Record<CategoryId, string> = {
-  'house-sale': 'Describe the house: \n -its condition\n -title status\n -surroundings',
-  'land-sale': 'Describe the plot: \n -road access\n -title deed\n -surroundings',
-  'commercial-sale': 'Describe Area: \n -Area size(5-6)\n -nearby Main road\n -Parking area',
+  'house-sale': 'Eleza nyumba: \n -hali yake\n -hali ya hati\n -mazingira',
+  'land-sale': 'Eleza kiwanja: \n -upatikanaji wa barabara\n -hati ya umiliki\n -mazingira',
+  'commercial-sale': 'Eleza eneo: \n -ukubwa wa eneo (5-6)\n -barabara kuu iliyo karibu\n -eneo la maegesho',
 }
 
 
 
 export default function HomePage() {
+  const { tr } = useLanguage()
   const [category, setCategory] = useState<CategoryId | null>(null)
   const [propertyCategoryId, setPropertyCategoryId] = useState('')
   const [step, setStep] = useState(0) // 0 = Details, 1 = Location & Images, 2 = Review
@@ -67,11 +69,11 @@ export default function HomePage() {
       ? (details as HouseDetails).houseType
       : category === 'land-sale' ? (details as LandDetails).landType : (details as CommercialDetails).commercialType
     if (!details?.propertyTitle.trim() || !details.salePrice || !selectedType) {
-      alert('Please complete the property title, sale price, and property type.')
+      alert(tr('Please complete the property title, sale price, and property type.'))
       return
     }
     if (!details.broker.name.trim() || !details.broker.phone.trim() || !details.owner.name.trim() || !details.owner.phone.trim()) {
-      alert('Broker and owner names and phone numbers are required.')
+      alert(tr('Broker and owner names and phone numbers are required.'))
       return
     }
 
@@ -105,6 +107,7 @@ export default function HomePage() {
           isCover: index === 0,
         })),
         documents: uploadedDocuments,
+        videos: location.videoUrl ? [{ url: location.videoUrl, fileType: location.videoFileType, sizeBytes: location.videoSizeBytes ?? undefined }] : [],
       }
       const payload = category === 'house-sale'
         ? { ...common, ...files, houseTypeId: (details as HouseDetails).houseType, bedrooms: Number((details as HouseDetails).bedrooms) || undefined, bathrooms: Number((details as HouseDetails).bathrooms) || undefined, features: (details as HouseDetails).features }
@@ -120,7 +123,7 @@ export default function HomePage() {
       setSubmitted(true)
     } catch (error) {
       console.error('Error submitting to backend:', error)
-      alert('Failed to submit property. Please try again.')
+      alert(tr('Failed to submit property. Please try again.'))
     } finally {
       setIsSubmitting(false)
     }
@@ -137,11 +140,11 @@ export default function HomePage() {
           <div className="oweru-panel">
             <div className="d-flex align-items-center justify-content-between mb-3">
               <div>
-                <span className="text-muted small">Register Estate</span>
-                <h5 className="mb-0">{category === 'house-sale' ? 'House for Sale' : category === 'land-sale' ? 'Land for Sale' : 'Commercial Area for Sale'}</h5>
+                <span className="text-muted small">{tr('Register Estate')}</span>
+                <h5 className="mb-0">{tr(category === 'house-sale' ? 'House for Sale' : category === 'land-sale' ? 'Land for Sale' : 'Commercial Area for Sale')}</h5>
               </div>
               <button className="btn btn-sm btn-link text-decoration-none" onClick={reset}>
-                <i className="bi bi-x-lg me-1" /> Cancel
+                <i className="bi bi-x-lg me-1" /> {tr('Cancel')}
               </button>
             </div>
 
@@ -150,9 +153,9 @@ export default function HomePage() {
             {submitted ? (
               <div className="text-center py-5">
                 <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '2.5rem' }} />
-                <h5 className="mt-3">Estate submitted</h5>
-                <p className="text-muted">The listing has been saved and is ready for review.</p>
-                <button className="btn btn-oweru mt-2" onClick={reset}>Register another estate</button>
+                <h5 className="mt-3">{tr('Estate submitted')}</h5>
+                <p className="text-muted">{tr('The listing has been saved and is ready for review.')}</p>
+                <button className="btn btn-oweru mt-2" onClick={reset}>{tr('Register another estate')}</button>
               </div>
             ) : (
               <>
@@ -176,16 +179,16 @@ export default function HomePage() {
                     disabled={step === 0}
                     onClick={() => setStep((s) => Math.max(0, s - 1))}
                   >
-                    <i className="bi bi-arrow-left me-1" /> Back
+                    <i className="bi bi-arrow-left me-1" /> {tr('Back')}
                   </button>
 
                   {step < 2 ? (
                     <button className="btn btn-oweru" onClick={() => setStep((s) => s + 1)}>
-                      Continue <i className="bi bi-arrow-right ms-1" />
+                      {tr('Continue')} <i className="bi bi-arrow-right ms-1" />
                     </button>
                   ) : (
                     <button className="btn btn-oweru" onClick={handleSubmit} disabled={isSubmitting}>
-                      <i className="bi bi-check2 me-1" /> Save
+                      <i className="bi bi-check2 me-1" /> {tr('Save')}
                     </button>
                   )}
                 </div>

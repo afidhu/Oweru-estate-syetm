@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma.config/prisma.service';
 export class LandForSaleService {
   constructor(private readonly prisma:PrismaService){}
   create(createLandForSaleDto: CreateLandForSaleDto) {
-    const { features, images, documents, broker, owner,regionId,wardId,districtId,landTypeId,propertyCategoryId, brokerId, ownerId, ...landData } = createLandForSaleDto;
+    const { features, images, documents, videos, broker, owner,regionId,wardId,districtId,landTypeId,propertyCategoryId, brokerId, ownerId, ...landData } = createLandForSaleDto;
     return this.prisma.landForSale.create({
       data: {
         ...landData,
@@ -21,8 +21,9 @@ export class LandForSaleService {
         features: features?.length ? { create: features.map((name) => ({ name })) } : undefined,
         images: images?.length ? { create: images } : undefined,
         documents: documents?.length ? { create: documents } : undefined,
+        videos: videos?.length ? { create: videos } : undefined,
       } as any,
-      include: { broker: true, owner: true, features: true, images: true, documents: true },
+      include: { broker: true, owner: true, features: true, images: true, documents: true, videos: true },
     });
   }
 
@@ -33,6 +34,7 @@ export class LandForSaleService {
   findOne(id: string) {
     return this.prisma.landForSale.findUnique({
       where: { id },
+      include: { landType: true, propertyCategory: true, broker: true, owner: true, region: true, district: true, ward: true, features: true, images: true, documents: true, videos: true },
     });
   }
 

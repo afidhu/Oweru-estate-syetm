@@ -30,6 +30,20 @@ class LandDocumentInput {
   sizeBytes?: number;
 }
 
+class LandVideoInput {
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @IsString()
+  @IsOptional()
+  fileType?: string;
+
+  @IsInt()
+  @IsOptional()
+  sizeBytes?: number;
+}
+
 export class CreateLandForSaleDto {
   @IsString()
   @IsNotEmpty()
@@ -132,4 +146,10 @@ export class CreateLandForSaleDto {
   @Type(() => LandDocumentInput)
   @IsOptional()
   documents?: LandDocumentInput[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LandVideoInput)
+  @IsOptional()
+  videos?: LandVideoInput[];
 }

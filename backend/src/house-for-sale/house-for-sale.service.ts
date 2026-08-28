@@ -8,7 +8,7 @@ export class HouseForSaleService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(createHouseForSaleDto: CreateHouseForSaleDto) {
-    const { features, images, documents, broker, owner, brokerId, districtId,regionId,wardId,ownerId,propertyCategoryId,houseTypeId, ...houseData } = createHouseForSaleDto;
+    const { features, images, documents, videos, broker, owner, brokerId, districtId,regionId,wardId,ownerId,propertyCategoryId,houseTypeId, ...houseData } = createHouseForSaleDto;
     return this.prisma.houseForSale.create({
       data: {
         ...houseData,
@@ -22,8 +22,9 @@ export class HouseForSaleService {
         features: features?.length ? { create: features.map((name) => ({ name })) } : undefined,
         images: images?.length ? { create: images } : undefined,
         documents: documents?.length ? { create: documents } : undefined,
+        videos: videos?.length ? { create: videos } : undefined,
       } as any,
-      include: { houseType: true, broker: true, owner: true, features: true, images: true, documents: true },
+      include: { houseType: true, broker: true, owner: true, features: true, images: true, documents: true, videos: true },
     });
   }
 
@@ -36,6 +37,7 @@ export class HouseForSaleService {
         features: true,
         images: true,
         documents: true,
+        videos: true,
       }
     });
   }
@@ -43,6 +45,7 @@ export class HouseForSaleService {
   findOne(id: string) {
     return this.prisma.houseForSale.findUnique({
       where: { id },
+      include: { houseType: true, propertyCategory: true, broker: true, owner: true, region: true, district: true, ward: true, features: true, images: true, documents: true, videos: true },
     });
   }
 

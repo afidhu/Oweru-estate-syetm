@@ -33,6 +33,9 @@ export interface LocationData {
   descriptionLang: 'en' | 'sw'
   images: File[]
   documents: File[]
+  videoUrl: string
+  videoFileType: string
+  videoSizeBytes: number | null
 }
 
 export interface PersonDetails {

@@ -30,6 +30,20 @@ class CommercialDocumentInput {
   sizeBytes?: number;
 }
 
+class CommercialVideoInput {
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @IsString()
+  @IsOptional()
+  fileType?: string;
+
+  @IsInt()
+  @IsOptional()
+  sizeBytes?: number;
+}
+
 export class CreateCommercialAreaDto {
   @IsString()
   @IsNotEmpty()
@@ -141,4 +155,10 @@ export class CreateCommercialAreaDto {
   @Type(() => CommercialDocumentInput)
   @IsOptional()
   documents?: CommercialDocumentInput[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CommercialVideoInput)
+  @IsOptional()
+  videos?: CommercialVideoInput[];
 }

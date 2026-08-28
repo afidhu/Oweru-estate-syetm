@@ -26,10 +26,12 @@ export class UploadsController {
         callback(null, `${randomUUID()}${extname(file.originalname).toLowerCase()}`);
       },
     }),
-    limits: { fileSize: 25 * 1024 * 1024 },
+    limits: { fileSize: 30 * 1024 * 1024 },
     fileFilter: (_request, file, callback) => {
-      const accepted = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
-      callback(accepted ? null : new BadRequestException('Only images and PDF documents are allowed.'), accepted);
+      const extension = extname(file.originalname).toLowerCase();
+      const acceptedVideo = file.mimetype.startsWith('video/') || ['.mp4', '.mkv', '.mov', '.avi', '.webm', '.m4v', '.3gp'].includes(extension);
+      const accepted = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf' || acceptedVideo;
+      callback(accepted ? null : new BadRequestException('Only images, videos, and PDF documents are allowed.'), accepted);
     },
   }))
   upload(@UploadedFiles() files: Array<{ filename: string; originalname: string; mimetype: string; size: number }> = []) {

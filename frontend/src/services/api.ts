@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+export const getUploadUrl = (url: string) => new URL(url, `${API_BASE_URL}/`).toString()
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -10,11 +11,14 @@ const api = axios.create({
 })
 
 export const uploadApi = {
-  upload: async (files: File[]) => {
+  upload: async (files: File[], onUploadProgress?: (progress: number) => void) => {
     const formData = new FormData()
     files.forEach((file) => formData.append('files', file))
     const response = await api.post('/uploads', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (event) => {
+            if (event.total) onUploadProgress?.(Math.round((event.loaded / event.total) * 100))
+          },
     })
     return response.data.files as { name: string; url: string; fileType?: string; sizeBytes?: number }[]
   },
