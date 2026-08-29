@@ -6,6 +6,13 @@ import type {
 import { useLanguage } from '../../i18n'
 const HOUSE_FEATURES = ['Road Access', 'Electricity', 'Water Supply', 'Borehole', 'Parking', 'Security', 'CCTV', 'Fence', 'Furnished', 'Fitted Kitchen', 'Outside Kitchen', 'Dining Room', 'Sitting Room', 'En-suite Bedrooms', 'Balcony', 'Tiled Floor', 'Store Room', 'Garden', 'Swimming Pool', 'Servant Quarter', 'Generator', 'Air Conditioning', 'Other']
 const SIZE_UNITS = ['sqm', 'acre', 'plot', 'metre', 'feet']
+const SIZE_UNIT_LABELS: Record<string, string> = {
+  'sqm': 'sqm',
+  'acre': 'acre',
+  'plot': 'plot',
+  'metre': 'metre',
+  'feet': 'feet',
+}
 const LAND_TYPES = ['Residential', 'Commercial', 'Agricultural', 'Mixed Use']
 const LAND_FEATURES = ['Road Access', 'Electricity', 'Water Supply', 'Borehole', 'Road Frontage', 'Tarmac Road Access', 'Corner Plot', 'Fence', 'Surveyed', 'Ready for Development', 'Closer to CBD', 'Other']
 const COMMERCIAL_BUILDING_TYPES = ['Office Building', 'Retail Shop', 'Showroom', 'Warehouse', 'Factory', 'Garage / Workshop', 'Hotel', 'Guest House', 'Restaurant Space', 'Bar / Lounge']
@@ -139,7 +146,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
               onChange={(e) => set({ sizeUnit: e.target.value })}
             >
               <option value="">--</option>
-              {SIZE_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              {SIZE_UNITS.map((u) => <option key={u} value={u}>{tr(u)}</option>)}
             </select>
           </div>
         </div>
@@ -163,7 +170,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
                 checked={d.houseType === houseType.id}
                 onChange={() => set({ houseType: houseType.id })}
               />
-              <label className="form-check-label" htmlFor={`ht-${houseType.id}`}>{houseType.name}</label>
+              <label className="form-check-label" htmlFor={`ht-${houseType.id}`}>{tr(houseType.name)}</label>
             </div>
           ))}
         </div>
@@ -245,7 +252,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
               onChange={(e) => set({ sizeUnit: e.target.value })}
             >
               <option value="">--</option>
-              {SIZE_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              {SIZE_UNITS.map((u) => <option key={u} value={u}>{tr(u)}</option>)}
             </select>
           </div>
         </div>
@@ -269,7 +276,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
                 checked={d.landType === landType.id}
                 onChange={() => set({ landType: landType.id })}
               />
-              <label className="form-check-label" htmlFor={`lt-${landType.id}`}>{landType.name}</label>
+              <label className="form-check-label" htmlFor={`lt-${landType.id}`}>{tr(landType.name)}</label>
             </div>
           ))}
         </div>
@@ -368,7 +375,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
             className={`btn btn-sm ${d.commercialType === propertyType.id ? 'btn-oweru' : 'btn-outline-secondary'}`}
             onClick={() => set({ commercialType: propertyType.id })}
           >
-            {propertyType.name}
+            {tr(propertyType.name)}
           </button>
         ))}
       </div>
