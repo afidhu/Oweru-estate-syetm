@@ -27,7 +27,7 @@ jobs:
             echo "🚀 Starting NestJS Backend Deployment"
             echo "======================================"
 
-            cd /home/oweru-saleapi/htdocs/saleapi.oweru.com
+            cd /home/oweru-saleapi/htdocs/saleapi.oweru.com/backend
 
             echo "📥 Pulling latest code..."
             git pull origin main
