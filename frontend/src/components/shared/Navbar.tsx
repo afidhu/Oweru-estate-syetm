@@ -18,7 +18,7 @@ export default function Navbar({ onLogoClick }: NavbarProps) {
             onLogoClick()
           }}
         >
-          <span className="oweru-brand-mark">O</span>
+          <img src="/assets/logo.png" alt="Oweru Estate" className="oweru-navbar-logo" />
           <span>
             <span className="oweru-brand-o">Owe</span>ru
           </span>
@@ -29,7 +29,6 @@ export default function Navbar({ onLogoClick }: NavbarProps) {
             <button type="button" className={`btn ${language === 'sw' ? 'btn-light' : 'btn-outline-light'}`} onClick={() => setLanguage('sw')}>Kisw</button>
           </div>
           <span className="text-white-50 small d-none d-sm-inline">{tr('Register Estate')}</span>
-        
         </div>
       </div>
     </nav>
