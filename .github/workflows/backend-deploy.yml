@@ -1,0 +1,50 @@
+name: NestJS Backend Live Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Deploy Backend via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+
+            cd /home/oweru-saleapi/htdocs/saleapi.oweru.com
+
+            echo "📥 Pulling latest backend code..."
+            git pull origin main
+
+            echo "📦 Installing dependencies..."
+            npm install
+
+            echo "🔧 Generating Prisma Client..."
+            npx prisma generate
+
+            echo "🏗️ Building NestJS..."
+            npm run build
+
+            echo "🗄️ Running Prisma migrations..."
+            npx prisma migrate deploy
+
+            echo "🚀 Restarting application..."
+            pm2 restart sale-nestjs-api || pm2 start dist/main.js --name sale-nestjs-api
+
+            pm2 save
+
+            echo "✅ Backend deployment completed!"

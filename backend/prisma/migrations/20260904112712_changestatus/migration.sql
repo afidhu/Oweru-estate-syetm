@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE `CommercialArea` MODIFY `status` VARCHAR(191) NOT NULL DEFAULT 'PENDING';
+
+-- AlterTable
+ALTER TABLE `HouseForSale` MODIFY `status` VARCHAR(191) NOT NULL DEFAULT 'PENDING';
+
+-- AlterTable
+ALTER TABLE `LandForSale` MODIFY `status` VARCHAR(191) NOT NULL DEFAULT 'PENDING';

@@ -129,7 +129,7 @@ model HouseForSale {
   bedrooms  Int?
   bathrooms Int?
 
-  status String @default("ACTIVE") // ACTIVE, PENDING, SOLD, ARCHIVED
+  status String @default("PENDING") // ACTIVE, PENDING, SOLD, ARCHIVED
 
   propertyCategory   PropertyCategory? @relation(fields: [propertyCategoryId], references: [id])
   propertyCategoryId String?
@@ -213,7 +213,7 @@ model LandForSale {
   landType   LandType? @relation(fields: [landTypeId], references: [id])
   landTypeId String?
 
-  status String @default("ACTIVE") // ACTIVE, PENDING, SOLD, ARCHIVED
+  status String @default("PENDING") // ACTIVE, PENDING, SOLD, ARCHIVED
 
   propertyCategory   PropertyCategory? @relation(fields: [propertyCategoryId], references: [id])
   propertyCategoryId String?
@@ -304,7 +304,7 @@ model CommercialArea {
   propertyCategory   PropertyCategory? @relation(fields: [propertyCategoryId], references: [id])
   propertyCategoryId String?
 
-  status String @default("ACTIVE") // ACTIVE, PENDING, SOLD, RENTED, ARCHIVED
+  status String @default("PENDING") // ACTIVE, PENDING, SOLD, RENTED, ARCHIVED
 
   broker   Broker? @relation(fields: [brokerId], references: [id])
   brokerId String?
