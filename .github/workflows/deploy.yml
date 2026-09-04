@@ -5,20 +5,21 @@ on:
     branches:
       - main
     paths:
-      - 'frontend/**' # Only triggers the deployment when you actually make changes inside the frontend folder
+      - 'frontend/**'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: frontend
+
     steps:
       - name: Checkout Repository Code
         uses: actions/checkout@v4
 
       - name: Set Up Node and Compile Code
-        # We use 'defaults.run.working-directory' to force GitHub inside your frontend folder
-        defaults:
-          run:
-            working-directory: frontend
         run: |
           npm install
           npm run build
@@ -29,7 +30,6 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
-          # Points specifically inside your frontend subfolder's dist package
           source: "frontend/dist/*"
           target: "/home/oweru-sale/htdocs/://oweru.com"
-          strip_components: 2 # Strips 'frontend' and 'dist' from the path so files drop cleanly into your root website directory
+          strip_components: 2
