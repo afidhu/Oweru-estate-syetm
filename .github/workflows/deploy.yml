@@ -32,3 +32,4 @@ jobs:
           target: "/home/oweru-sale/htdocs/sale.oweru.com/"
           strip_components: 2
           debug: true
+          port: 22
