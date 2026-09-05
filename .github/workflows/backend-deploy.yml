@@ -27,7 +27,11 @@ jobs:
             echo "🚀 Starting NestJS Backend Deployment"
             echo "======================================"
 
-            cd /home/oweru-saleapi/htdocs/saleapi.oweru.com
+            echo "======================================"
+            echo "🚀 Starting NestJS Backend Deployment"
+            echo "======================================"
+
+            cd /home/oweru-saleapi/htdocs/saleapi.oweru.com/backend
 
             echo "📥 Pulling latest code..."
             git pull origin main
@@ -44,16 +48,10 @@ jobs:
             echo "🗄️ Applying Prisma migrations..."
             npx prisma migrate deploy
 
-            echo "🚀 Starting/Restarting PM2..."
-
-            if pm2 describe sale-nestjs-api > /dev/null; then
-              pm2 restart sale-nestjs-api
-            else
-              pm2 start dist/main.js --name sale-nestjs-api
-            fi
+            echo "🚀 Restarting application..."
+            pm2 restart sale-nestjs-api || pm2 start dist/main.js --name sale-nestjs-api
 
             pm2 save
 
             echo "======================================"
             echo "✅ Backend deployment completed!"
-            echo "======================================"
