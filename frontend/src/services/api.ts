@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://saleapi.oweru.com'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 export const getUploadUrl = (url: string) => new URL(url, `${API_BASE_URL}/`).toString()
 
 const api = axios.create({
