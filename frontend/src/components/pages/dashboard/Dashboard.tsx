@@ -1,8 +1,9 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import api, { getUploadUrl } from '../../../services/api'
+import type { PropertyCategoryRecord } from '../../../types'
 
-type Section = 'overview' | 'listings' | 'people'
+type Section = 'overview' | 'listings' | 'people' | 'categories'
 type PersonKind = 'brokers' | 'owners'
 type ListingKind = 'house-for-sale' | 'land-for-sale' | 'commercial-area'
 
@@ -12,7 +13,9 @@ interface Person { id: string; name: string; phone: string; email?: string | nul
 
 const labels: Record<ListingKind, string> = { 'house-for-sale': 'Houses', 'land-for-sale': 'Land', 'commercial-area': 'Commercial' }
 const emptyPerson = { name: '', phone: '', email: '', nid: '', tin: '' }
+const emptyCategory = { title: '', slug: '', description: '', icon: '', accent: '' }
 const endpoint = (kind: ListingKind) => `/${kind}`
+const slugify = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 const money = (value: Listing['salePrice']) => value === null || value === undefined || value === '' ? 'Price not set' : `TZS ${Number(value).toLocaleString()}`
 
 export default function Dashboard() {
@@ -20,6 +23,7 @@ export default function Dashboard() {
   const [listings, setListings] = useState<Listing[]>([])
   const [brokers, setBrokers] = useState<Person[]>([])
   const [owners, setOwners] = useState<Person[]>([])
+  const [categories, setCategories] = useState<PropertyCategoryRecord[]>([])
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('ALL')
   const [kindFilter, setKindFilter] = useState<'ALL' | ListingKind>('ALL')
@@ -30,6 +34,8 @@ export default function Dashboard() {
   const [notice, setNotice] = useState('')
   const [personModal, setPersonModal] = useState<{ kind: PersonKind; id?: string } | null>(null)
   const [personForm, setPersonForm] = useState(emptyPerson)
+  const [categoryModal, setCategoryModal] = useState<{ id?: string } | null>(null)
+  const [categoryForm, setCategoryForm] = useState(emptyCategory)
   const [listingModal, setListingModal] = useState<Listing | null>(null)
   const [viewListing, setViewListing] = useState<ListingDetail | null>(null)
   const [viewLoading, setViewLoading] = useState(false)
@@ -39,15 +45,15 @@ export default function Dashboard() {
   async function loadData() {
     setLoading(true); setError('')
     try {
-      const [houses, land, commercial, brokerData, ownerData] = await Promise.all([
-        api.get('/house-for-sale'), api.get('/land-for-sale'), api.get('/commercial-area'), api.get('/brokers'), api.get('/owners'),
+      const [houses, land, commercial, brokerData, ownerData, categoryData] = await Promise.all([
+        api.get('/house-for-sale'), api.get('/land-for-sale'), api.get('/commercial-area'), api.get('/brokers'), api.get('/owners'), api.get('/property-categories'),
       ])
       setListings([
         ...(houses.data as Listing[]).map((item) => ({ ...item, category: 'house-for-sale' as const })),
         ...(land.data as Listing[]).map((item) => ({ ...item, category: 'land-for-sale' as const })),
         ...(commercial.data as Listing[]).map((item) => ({ ...item, category: 'commercial-area' as const })),
       ])
-      setBrokers(brokerData.data); setOwners(ownerData.data)
+      setBrokers(brokerData.data); setOwners(ownerData.data); setCategories(categoryData.data)
     } catch (requestError) { console.error(requestError); setError('Unable to load dashboard data. Check that the API is running.') }
     finally { setLoading(false) }
   }
@@ -73,6 +79,19 @@ export default function Dashboard() {
   async function deletePerson(kind: PersonKind, id: string) {
     if (!window.confirm('Delete this contact?')) return
     try { await api.delete(`/${kind}/${id}`); await loadData(); flash('Contact deleted.') } catch (requestError) { console.error(requestError); setError('The contact could not be deleted.') }
+  }
+  function openCategory(category?: PropertyCategoryRecord) {
+    setCategoryModal({ id: category?.id })
+    setCategoryForm(category ? { title: category.title, slug: category.slug, description: category.description || '', icon: category.icon || '', accent: category.accent || '' } : emptyCategory)
+  }
+  async function saveCategory(event: FormEvent) {
+    event.preventDefault(); if (!categoryModal || !categoryForm.title.trim() || !categoryForm.slug.trim()) return; setSaving(true)
+    try { const data = { ...categoryForm, description: categoryForm.description || undefined, icon: categoryForm.icon || undefined, accent: categoryForm.accent || undefined }; categoryModal.id ? await api.patch(`/property-categories/${categoryModal.id}`, data) : await api.post('/property-categories', data); setCategoryModal(null); await loadData(); flash('Category saved successfully.') }
+    catch (requestError) { console.error(requestError); setError('The category could not be saved.') } finally { setSaving(false) }
+  }
+  async function deleteCategory(id: string) {
+    if (!window.confirm('Delete this category?')) return
+    try { await api.delete(`/property-categories/${id}`); await loadData(); flash('Category deleted.') } catch (requestError) { console.error(requestError); setError('The category could not be deleted.') }
   }
   async function saveListing(event: FormEvent) {
     event.preventDefault(); if (!listingModal?.title.trim()) return; setSaving(true)
@@ -100,14 +119,16 @@ export default function Dashboard() {
   }
 
   return <div className="admin-shell">
-    <aside className="admin-sidebar"><a className="admin-brand" href="/"><span className="admin-brand-mark">O</span><span>oweru<span>estate</span></span></a><div className="admin-sidebar-label">Workspace</div><nav className="admin-nav">{([['overview', 'grid-1x2', 'Overview'], ['listings', 'buildings', 'Listings'], ['people', 'people', 'People']] as const).map(([value, icon, label]) => <button key={value} className={section === value ? 'active' : ''} onClick={() => setSection(value)}><i className={`bi bi-${icon}`} /> {label}{value === 'listings' && <span className="admin-nav-count">{listings.length}</span>}</button>)}</nav><div className="admin-sidebar-bottom"><div className="admin-user-avatar">AD</div><div><strong>Administrator</strong><small>Estate operations</small></div></div></aside>
-    <main className="admin-main"><header className="admin-topbar"><div><span className="admin-kicker">Operations center</span><h1>{section === 'overview' ? 'Good morning, Admin' : section === 'listings' ? 'Property listings' : 'People directory'}</h1></div><div className="admin-top-actions"><span className="admin-live"><span /> Live data</span><button className="admin-icon-button" title="Refresh data" onClick={() => void loadData()}><i className="bi bi-arrow-clockwise" /></button><button className="admin-primary" onClick={() => section === 'people' ? openPerson(personKind) : setAddListingOpen(true)}><i className="bi bi-plus-lg" /> {section === 'people' ? 'Add person' : 'Add listing'}</button></div></header>
+    <aside className="admin-sidebar"><a className="admin-brand" href="/"><span className="admin-brand-mark">O</span><span>oweru<span>estate</span></span></a><div className="admin-sidebar-label">Workspace</div><nav className="admin-nav">{([['overview', 'grid-1x2', 'Overview'], ['listings', 'buildings', 'Listings'], ['people', 'people', 'People'], ['categories', 'tags', 'Categories']] as const).map(([value, icon, label]) => <button key={value} className={section === value ? 'active' : ''} onClick={() => setSection(value)}><i className={`bi bi-${icon}`} /> {label}{value === 'listings' && <span className="admin-nav-count">{listings.length}</span>}{value === 'categories' && <span className="admin-nav-count">{categories.length}</span>}</button>)}</nav><div className="admin-sidebar-bottom"><div className="admin-user-avatar">AD</div><div><strong>Administrator</strong><small>Estate operations</small></div></div></aside>
+    <main className="admin-main"><header className="admin-topbar"><div><span className="admin-kicker">Operations center</span><h1>{section === 'overview' ? 'Good morning, Admin' : section === 'listings' ? 'Property listings' : section === 'people' ? 'People directory' : 'Property categories'}</h1></div><div className="admin-top-actions"><span className="admin-live"><span /> Live data</span><button className="admin-icon-button" title="Refresh data" onClick={() => void loadData()}><i className="bi bi-arrow-clockwise" /></button><button className="admin-primary" onClick={() => section === 'people' ? openPerson(personKind) : section === 'categories' ? openCategory() : setAddListingOpen(true)}><i className="bi bi-plus-lg" /> {section === 'people' ? 'Add person' : section === 'categories' ? 'Add category' : 'Add listing'}</button></div></header>
       {error && <div className="admin-alert error"><i className="bi bi-exclamation-circle" /> {error}<button onClick={() => setError('')}><i className="bi bi-x" /></button></div>}{notice && <div className="admin-alert success"><i className="bi bi-check-circle" /> {notice}</div>}
       {section === 'overview' && <><section className="admin-metrics"><Metric icon="buildings" label="Total listings" value={listings.length} detail="Across all property types" tone="navy" /><Metric icon="check2-circle" label="Active listings" value={active} detail={`${listings.length ? Math.round(active / listings.length * 100) : 0}% of portfolio`} tone="gold" /><Metric icon="hourglass-split" label="Needs attention" value={pending} detail="Pending review" tone="coral" /><Metric icon="people" label="People managed" value={brokers.length + owners.length} detail={`${brokers.length} brokers - ${owners.length} owners`} tone="green" /></section><div className="admin-content-grid"><section className="admin-panel admin-panel-wide"><PanelHeading title="Recent listings" action="View all" onAction={() => setSection('listings')} />{loading ? <Loading /> : <ListingTable listings={listings.slice(0, 6)} onEdit={setListingModal} onDelete={deleteListing} onView={viewListingDetails} />}</section><section className="admin-panel"><PanelHeading title="Portfolio mix" /><div className="portfolio-list">{(Object.keys(labels) as ListingKind[]).map((kind) => { const count = listings.filter((item) => item.category === kind).length; return <div className="portfolio-row" key={kind}><span className={`portfolio-icon ${kind}`}><i className={`bi bi-${kind === 'house-for-sale' ? 'house' : kind === 'land-for-sale' ? 'geo' : 'shop'}`} /></span><div><strong>{labels[kind]}</strong><small>{count} listings</small></div><b>{listings.length ? Math.round(count / listings.length * 100) : 0}%</b></div> })}</div><div className="admin-mini-note"><i className="bi bi-shield-check" /><span><strong>All systems operational</strong><small>Last synced just now</small></span></div></section></div></>}
       {section === 'listings' && <section className="admin-panel admin-full-panel"><div className="admin-toolbar"><Search value={query} onChange={setQuery} placeholder="Search title, owner or broker" /><select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as typeof kindFilter)}><option value="ALL">All property types</option>{(Object.keys(labels) as ListingKind[]).map((kind) => <option key={kind} value={kind}>{labels[kind]}</option>)}</select><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="ALL">All statuses</option><option>ACTIVE</option><option>PENDING</option><option>SOLD</option><option>ARCHIVED</option></select></div>{loading ? <Loading /> : <ListingTable listings={filteredListings} onEdit={setListingModal} onDelete={deleteListing} onView={viewListingDetails} emptyMessage="No listings match your filters." />}</section>}
       {section === 'people' && <section className="admin-panel admin-full-panel"><div className="people-tabs"><button className={personKind === 'brokers' ? 'active' : ''} onClick={() => setPersonKind('brokers')}><i className="bi bi-briefcase" /> Brokers <b>{brokers.length}</b></button><button className={personKind === 'owners' ? 'active' : ''} onClick={() => setPersonKind('owners')}><i className="bi bi-person" /> Owners <b>{owners.length}</b></button><div className="people-search"><Search value={query} onChange={setQuery} placeholder="Search people" /></div></div><PeopleTable people={(personKind === 'brokers' ? brokers : owners).filter((person) => `${person.name} ${person.phone} ${person.email ?? ''}`.toLowerCase().includes(query.toLowerCase()))} kind={personKind} onEdit={openPerson} onDelete={deletePerson} /></section>}
+      {section === 'categories' && <section className="admin-panel admin-full-panel"><div className="admin-toolbar"><Search value={query} onChange={setQuery} placeholder="Search categories" /></div><CategoriesTable categories={categories.filter((category) => `${category.title} ${category.slug}`.toLowerCase().includes(query.toLowerCase()))} onEdit={openCategory} onDelete={deleteCategory} /></section>}
     </main>
     {personModal && <Modal title={`${personModal.id ? 'Edit' : 'Add'} ${personKind === 'brokers' ? 'broker' : 'owner'}`} onClose={() => setPersonModal(null)}><form onSubmit={savePerson} className="admin-form"><div className="form-grid"><Field label="Full name" required value={personForm.name} onChange={(value) => setPersonForm({ ...personForm, name: value })} /><Field label="Phone number" required value={personForm.phone} onChange={(value) => setPersonForm({ ...personForm, phone: value })} /><Field label="Email (optional)" type="email" value={personForm.email} onChange={(value) => setPersonForm({ ...personForm, email: value })} /><Field label="NIDA (optional)" value={personForm.nid} onChange={(value) => setPersonForm({ ...personForm, nid: value })} /><Field label="TIN (optional)" value={personForm.tin} onChange={(value) => setPersonForm({ ...personForm, tin: value })} /></div><ModalActions saving={saving} /></form></Modal>}
+    {categoryModal && <Modal title={`${categoryModal.id ? 'Edit' : 'Add'} category`} onClose={() => setCategoryModal(null)}><form onSubmit={saveCategory} className="admin-form"><div className="form-grid"><Field label="Title" required value={categoryForm.title} onChange={(value) => setCategoryForm({ ...categoryForm, title: value, slug: categoryModal?.id ? categoryForm.slug : slugify(value) })} /><Field label="Slug" required value={categoryForm.slug} onChange={(value) => setCategoryForm({ ...categoryForm, slug: value })} /><Field label="Description (optional)" value={categoryForm.description} onChange={(value) => setCategoryForm({ ...categoryForm, description: value })} /><Field label="Icon class (optional)" value={categoryForm.icon} onChange={(value) => setCategoryForm({ ...categoryForm, icon: value })} /><Field label="Accent color (optional)" value={categoryForm.accent} onChange={(value) => setCategoryForm({ ...categoryForm, accent: value })} /></div><ModalActions saving={saving} /></form></Modal>}
     {listingModal && <Modal title="Edit listing" onClose={() => setListingModal(null)}><form onSubmit={saveListing} className="admin-form"><div className="form-grid"><Field label="Property title" required value={listingModal.title} onChange={(value) => setListingModal({ ...listingModal, title: value })} /><Field label="Sale price" type="number" value={String(listingModal.salePrice ?? '')} onChange={(value) => setListingModal({ ...listingModal, salePrice: value })} /><label>Status<select value={listingModal.status ?? 'ACTIVE'} onChange={(event) => setListingModal({ ...listingModal, status: event.target.value })}><option>ACTIVE</option><option>PENDING</option><option>SOLD</option><option>ARCHIVED</option></select></label></div><ModalActions saving={saving} /></form></Modal>}
     {viewLoading && <div className="modal-backdrop" role="status"><div className="admin-modal"><Loading /></div></div>}
     {viewListing && <ListingViewModal listing={viewListing} onClose={() => setViewListing(null)} />}
@@ -136,3 +157,4 @@ function prettyLabel(value: string) { return value.replace(/([A-Z])/g, ' $1').re
 function formatDetailValue(value: any, key?: string): string { if (key === 'createdAt' || key === 'updatedAt') { const date = new Date(value); if (!Number.isNaN(date.getTime())) return date.toLocaleString(undefined, { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) } if (value instanceof Date) return value.toLocaleString(); if (typeof value === 'object' && value !== null) return value.name || value.title || value.phone || 'Available'; return String(value) }
 function MediaSection({ title, icon, empty, children }: { title: string; icon: string; empty: boolean; children: ReactNode }) { return <section className="listing-media-section"><h3><i className={`bi bi-${icon}`} /> {title}</h3>{empty ? <p className="listing-media-empty">No {title.toLowerCase()} attached.</p> : <div className="listing-media-grid">{children}</div>}</section> }
 function PeopleTable({ people, kind, onEdit, onDelete }: { people: Person[]; kind: PersonKind; onEdit: (kind: PersonKind, person?: Person) => void; onDelete: (kind: PersonKind, id: string) => void }) { return people.length ? <div className="table-wrap"><table className="admin-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Identity</th><th /></tr></thead><tbody>{people.map((person) => <tr key={person.id}><td><div className="person-cell"><span>{person.name.slice(0, 2).toUpperCase()}</span><strong>{person.name}</strong></div></td><td>{person.phone}</td><td>{person.email || 'Not provided'}</td><td><small>{person.nid ? `NIDA ${person.nid}` : 'No NIDA'}<br />{person.tin ? `TIN ${person.tin}` : 'No TIN'}</small></td><td><div className="row-actions"><button title="Edit" onClick={() => onEdit(kind, person)}><i className="bi bi-pencil" /></button><button title="Delete" onClick={() => onDelete(kind, person.id)}><i className="bi bi-trash3" /></button></div></td></tr>)}</tbody></table></div> : <div className="empty-state"><i className="bi bi-people" /><strong>No {kind} found</strong><span>Add a contact to start building your directory.</span></div> }
+function CategoriesTable({ categories, onEdit, onDelete }: { categories: PropertyCategoryRecord[]; onEdit: (category?: PropertyCategoryRecord) => void; onDelete: (id: string) => void }) { return categories.length ? <div className="table-wrap"><table className="admin-table"><thead><tr><th>Category</th><th>Slug</th><th>Description</th><th /></tr></thead><tbody>{categories.map((category) => <tr key={category.id}><td><div className="property-cell"><span className="property-thumb" style={{ background: `${category.accent || '#3B6FE0'}1a`, color: category.accent || '#3B6FE0' }}><i className={`bi ${category.icon || 'bi-tags'}`} /></span><strong>{category.title}</strong></div></td><td>{category.slug}</td><td><small>{category.description || 'No description'}</small></td><td><div className="row-actions"><button title="Edit" onClick={() => onEdit(category)}><i className="bi bi-pencil" /></button><button title="Delete" onClick={() => onDelete(category.id)}><i className="bi bi-trash3" /></button></div></td></tr>)}</tbody></table></div> : <div className="empty-state"><i className="bi bi-tags" /><strong>No categories found</strong><span>Add a property category to get started.</span></div> }
