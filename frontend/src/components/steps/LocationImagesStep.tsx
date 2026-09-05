@@ -4,6 +4,7 @@ import L from "leaflet";
 import type { LocationData, LookupItem } from "../../types";
 import LocationForm from "../shared/LocationForm";
 import { useLanguage } from "../../i18n";
+import { staticDistricts, staticRegions, staticWards } from "../../data/tanzaniaLocations";
 
 interface LocationImagesStepProps {
   location: LocationData;
@@ -26,9 +27,12 @@ export default function LocationImagesStep({
   const [videoProgress, setVideoProgress] = useState(0);
   const [videoError, setVideoError] = useState("");
 
-  const [regions, setRegions] = useState<LookupItem[]>([]);
-  const [districts, setDistricts] = useState<(LookupItem & { regionId: string })[]>([]);
-  const [wards, setWards] = useState<(LookupItem & { districtId: string })[]>([]);
+  // Seeded from the bundled Tanzania regions/districts/wards dataset so the
+  // dropdowns work immediately; replaced with live API data (real DB ids)
+  // once the backend has locations seeded.
+  const [regions, setRegions] = useState<LookupItem[]>(staticRegions);
+  const [districts, setDistricts] = useState<(LookupItem & { regionId: string })[]>(staticDistricts);
+  const [wards, setWards] = useState<(LookupItem & { districtId: string })[]>(staticWards);
 
   useEffect(() => {
     Promise.all([
@@ -36,10 +40,10 @@ export default function LocationImagesStep({
       houseForSaleApi.getDistricts(),
       houseForSaleApi.getWards(),
     ]).then(([nextRegions, nextDistricts, nextWards]) => {
-      setRegions(nextRegions);
-      setDistricts(nextDistricts);
-      setWards(nextWards);
-    }).catch((error) => console.error("Unable to load location options:", error));
+      if (Array.isArray(nextRegions) && nextRegions.length) setRegions(nextRegions);
+      if (Array.isArray(nextDistricts) && nextDistricts.length) setDistricts(nextDistricts);
+      if (Array.isArray(nextWards) && nextWards.length) setWards(nextWards);
+    }).catch((error) => console.error("Location API unavailable, using bundled Tanzania location data instead:", error));
   }, []);
 
   useEffect(() => {
