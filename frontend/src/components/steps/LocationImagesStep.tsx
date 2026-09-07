@@ -10,12 +10,14 @@ interface LocationImagesStepProps {
   location: LocationData;
   descriptionHint: string;
   onChange: (next: LocationData) => void;
+  onVideoUploading?: (uploading: boolean) => void;
 }
 
 export default function LocationImagesStep({
   location,
   descriptionHint,
   onChange,
+  onVideoUploading,
 }: LocationImagesStepProps) {
   const { tr } = useLanguage();
   const set = (patch: Partial<LocationData>) =>
@@ -129,6 +131,7 @@ export default function LocationImagesStep({
 
         setVideoError("");
         setVideoProgress(0);
+        onVideoUploading?.(true);
         try {
           const [uploadedVideo] = await uploadApi.upload([file], setVideoProgress);
           set({ videoUrl: uploadedVideo.url, videoFileType: uploadedVideo.fileType || file.type, videoSizeBytes: uploadedVideo.sizeBytes || file.size });
@@ -136,6 +139,8 @@ export default function LocationImagesStep({
           console.error("Video upload error:", error);
           setVideoError(tr("Video upload failed. Please try again."));
           setVideoProgress(0);
+        } finally {
+          onVideoUploading?.(false);
         }
   };
 
@@ -276,7 +281,12 @@ export default function LocationImagesStep({
       <label className="form-label fw-semibold d-block mt-3">
         {tr("Verified documents")}
       </label>
-      <label className="btn btn-outline-secondary btn-sm mb-1">
+      <label
+        className={`btn btn-outline-secondary btn-sm mb-1 ${videoProgress > 0 && videoProgress < 100 ? 'disabled' : ''}`}
+        onClick={(event) => {
+          if (videoProgress > 0 && videoProgress < 100) event.preventDefault()
+        }}
+      >
         <i className="bi bi-paperclip me-1" />
         {location.documents.length > 0
           ? `${location.documents.length} document(s) attached`
@@ -286,6 +296,7 @@ export default function LocationImagesStep({
           accept="application/pdf,image/*"
           multiple
           hidden
+          disabled={videoProgress > 0 && videoProgress < 100}
           onChange={(e) => set({ documents: Array.from(e.target.files ?? []) })}
         />
       </label>

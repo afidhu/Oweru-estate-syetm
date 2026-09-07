@@ -46,6 +46,7 @@ export default function HomePage() {
   const [location, setLocation] = useState<LocationData>(emptyLocation)
   const [submitted, setSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isVideoUploading, setIsVideoUploading] = useState(false)
 
   function startCategory(id: CategoryId, databaseId: string) {
     setCategory(id)
@@ -63,6 +64,25 @@ export default function HomePage() {
     setStep(0)
     setSubmitted(false)
   }
+
+  const selectedType = category === 'house-sale'
+    ? (details as HouseDetails | null)?.houseType
+    : category === 'land-sale' ? (details as LandDetails | null)?.landType : (details as CommercialDetails | null)?.commercialType
+  const canContinueFromDetails = Boolean(
+    details?.propertyTitle.trim()
+    && details.salePrice
+    && selectedType
+    && details.broker.name.trim()
+    && details.broker.phone.trim()
+    && details.owner.name.trim()
+    && details.owner.phone.trim(),
+  )
+  const canContinueFromLocation = Boolean(
+    location.images.length > 0
+    && location.videoUrl
+    && location.documents.length > 0
+    && !isVideoUploading,
+  )
 
   async function handleSubmit() {
     const selectedType = category === 'house-sale'
@@ -167,6 +187,7 @@ export default function HomePage() {
                     location={location}
                     descriptionHint={DESCRIPTION_HINTS[category]}
                     onChange={setLocation}
+                    onVideoUploading={setIsVideoUploading}
                   />
                 )}
                 {step === 2 && (
@@ -183,12 +204,16 @@ export default function HomePage() {
                   </button>
 
                   {step < 2 ? (
-                    <button className="btn btn-oweru" onClick={() => setStep((s) => s + 1)}>
+                    <button
+                      className="btn btn-oweru"
+                      disabled={(step === 0 && !canContinueFromDetails) || (step === 1 && !canContinueFromLocation)}
+                      onClick={() => setStep((s) => s + 1)}
+                    >
                       {tr('Continue')} <i className="bi bi-arrow-right ms-1" />
                     </button>
                   ) : (
-                    <button className="btn btn-oweru" onClick={handleSubmit} disabled={isSubmitting}>
-                      <i className="bi bi-check2 me-1" /> {tr('Save')}
+                    <button className="btn btn-oweru" onClick={handleSubmit} disabled={isSubmitting || isVideoUploading}>
+                      {isSubmitting ? <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" /> {tr('Saving...')}</> : <><i className="bi bi-check2 me-1" /> {tr('Save')}</>}
                     </button>
                   )}
                 </div>
