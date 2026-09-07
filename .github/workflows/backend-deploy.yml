@@ -33,6 +33,10 @@ jobs:
 
             cd /home/oweru-saleapi/htdocs/saleapi.oweru.com/backend
 
+            # 1. Force Git to clean and reset any local file conflicts on the server 🧹
+            git reset --hard origin/main
+            git clean -fd
+            
             echo "📥 Pulling latest code..."
             git pull origin main
 
