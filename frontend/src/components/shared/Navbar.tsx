@@ -18,7 +18,7 @@ export default function Navbar({ onLogoClick }: NavbarProps) {
             onLogoClick()
           }}
         >
-          <img src="/assets/logo.png" alt="Oweru Estate" className="oweru-navbar-logo" />
+          <img src="/assets/logo.jpeg" alt="Oweru Estate" className="oweru-navbar-logo" />
           <span>
             <span className="oweru-brand-o">Owe</span>ru
           </span>
