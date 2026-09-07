@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import type { LocationData, LookupItem } from '../../types'
 import { useLanguage } from '../../i18n'
 
@@ -7,6 +8,62 @@ interface Props {
   regions: LookupItem[]
   districts: (LookupItem & { regionId: string })[]
   wards: (LookupItem & { districtId: string })[]
+}
+
+function LocationSelect({
+  value, placeholder, options, disabled, onChange,
+}: {
+  value: string
+  placeholder: string
+  options: LookupItem[]
+  disabled?: boolean
+  onChange: (value: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const selected = options.find((option) => option.id === value)
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', closeOnOutsideClick)
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick)
+  }, [])
+
+  return (
+    <div className="oweru-location-select" ref={containerRef}>
+      <button
+        type="button"
+        className={`form-select oweru-location-select-trigger ${disabled ? 'disabled' : ''}`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span>{selected?.name || placeholder}</span>
+      </button>
+      {open && !disabled && (
+        <div className="oweru-location-select-menu" role="listbox">
+          <button type="button" className={`oweru-location-option ${!value ? 'selected' : ''}`} onClick={() => { onChange(''); setOpen(false) }}>
+            {placeholder}
+          </button>
+          {options.map((option) => (
+            <button
+              type="button"
+              role="option"
+              aria-selected={option.id === value}
+              className={`oweru-location-option ${option.id === value ? 'selected' : ''}`}
+              key={option.id}
+              onClick={() => { onChange(option.id); setOpen(false) }}
+            >
+              {option.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function LocationForm({ location, onChange, regions, districts, wards }: Props) {
@@ -20,35 +77,43 @@ export default function LocationForm({ location, onChange, regions, districts, w
       <div className="row g-3 mb-3">
         <div className="col-md-6">
           <label className="form-label fw-semibold">{tr('Region')}</label>
-          <select className="form-select" value={location.regionId} onChange={(e) => {
-            const selected = regions.find((item) => item.id === e.target.value)
-            set({ regionId: e.target.value, region: selected?.name || '', districtId: '', district: '', wardId: '', ward: '' })
-          }}>
-            <option value="">{tr('Select a region...')}</option>
-            {regions.map((region) => <option key={region.id} value={region.id}>{region.name}</option>)}
-          </select>
+          <LocationSelect
+            value={location.regionId}
+            placeholder={tr('Select a region...')}
+            options={regions}
+            onChange={(regionId) => {
+              const selected = regions.find((item) => item.id === regionId)
+              set({ regionId, region: selected?.name || '', districtId: '', district: '', wardId: '', ward: '' })
+            }}
+          />
         </div>
         <div className="col-md-6">
           <label className="form-label fw-semibold">{tr('District')}</label>
-          <select className="form-select" value={location.districtId} disabled={!location.regionId} onChange={(e) => {
-            const selected = availableDistricts.find((item) => item.id === e.target.value)
-            set({ districtId: e.target.value, district: selected?.name || '', wardId: '', ward: '' })
-          }}>
-            <option value="">{location.regionId ? tr('Select a district...') : tr('Choose a region first')}</option>
-            {availableDistricts.map((district) => <option key={district.id} value={district.id}>{district.name}</option>)}
-          </select>
+          <LocationSelect
+            value={location.districtId}
+            placeholder={location.regionId ? tr('Select a district...') : tr('Choose a region first')}
+            options={availableDistricts}
+            disabled={!location.regionId}
+            onChange={(districtId) => {
+              const selected = availableDistricts.find((item) => item.id === districtId)
+              set({ districtId, district: selected?.name || '', wardId: '', ward: '' })
+            }}
+          />
         </div>
       </div>
       <div className="row g-3 mb-3">
         <div className="col-md-6">
           <label className="form-label fw-semibold">{tr('Ward / Area')}</label>
-          <select className="form-select" value={location.wardId} disabled={!location.districtId} onChange={(e) => {
-            const selected = availableWards.find((item) => item.id === e.target.value)
-            set({ wardId: e.target.value, ward: selected?.name || '' })
-          }}>
-            <option value="">{location.districtId ? tr('Select a ward...') : tr('Choose a district first')}</option>
-            {availableWards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}
-          </select>
+          <LocationSelect
+            value={location.wardId}
+            placeholder={location.districtId ? tr('Select a ward...') : tr('Choose a district first')}
+            options={availableWards}
+            disabled={!location.districtId}
+            onChange={(wardId) => {
+              const selected = availableWards.find((item) => item.id === wardId)
+              set({ wardId, ward: selected?.name || '' })
+            }}
+          />
         </div>
         <div className="col-md-6">
           <label className="form-label fw-semibold">{tr('Exact location')}</label>
