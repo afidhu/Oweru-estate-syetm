@@ -324,6 +324,7 @@ model CommercialArea {
   description String? @db.Text
   language    String  @default("ENGLISH")
 
+  features  CommercialAreaFeature[]
   images    CommercialAreaImage[]
   documents CommercialAreaDocument[]
   videos    CommercialAreaVideo[]
@@ -332,6 +333,13 @@ model CommercialArea {
   updatedAt DateTime @updatedAt
 
   @@index([status, listingType])
+}
+
+model CommercialAreaFeature {
+  id           String         @id @default(uuid())
+  name         String
+  commercial   CommercialArea @relation(fields: [commercialId], references: [id], onDelete: Cascade)
+  commercialId String
 }
 
 model CommercialAreaImage {

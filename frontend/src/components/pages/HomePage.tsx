@@ -26,7 +26,7 @@ function makeDetails(category: CategoryId): DetailsData {
   }
   if (category === 'house-sale') return { ...base, houseType: '', bedrooms: '', bathrooms: '', features: [] } as HouseDetails
   if (category === 'land-sale') return { ...base, landType: '', features: [] } as LandDetails
-  return { ...base, commercialType: '' } as CommercialDetails
+  return { ...base, commercialType: '', features: [] } as CommercialDetails
 }
 
 const DESCRIPTION_HINTS: Record<CategoryId, string> = {
@@ -113,7 +113,7 @@ export default function HomePage() {
         ? { ...common, ...files, houseTypeId: (details as HouseDetails).houseType, bedrooms: Number((details as HouseDetails).bedrooms) || undefined, bathrooms: Number((details as HouseDetails).bathrooms) || undefined, features: (details as HouseDetails).features }
         : category === 'land-sale'
           ? { ...common, ...files, landTypeId: (details as LandDetails).landType, features: (details as LandDetails).features }
-          : { ...common, ...files, listingType: 'SALE', propertyTypeId: (details as CommercialDetails).commercialType }
+          : { ...common, ...files, listingType: 'SALE', propertyTypeId: (details as CommercialDetails).commercialType, features: (details as CommercialDetails).features }
 
       const response = category === 'house-sale'
         ? await houseForSaleApi.create(payload)
