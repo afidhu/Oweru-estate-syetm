@@ -4,6 +4,7 @@ import type {
   CategoryId, CommercialDetails, DetailsData, HouseDetails, LandDetails, PersonDetails,
 } from '../../types'
 import { useLanguage } from '../../i18n'
+import ResponsiveSelect from '../shared/ResponsiveSelect'
 const HOUSE_FEATURES = ['Road Access', 'Electricity', 'Water Supply', 'Borehole', 'Parking', 'Security', 'CCTV', 'Fence', 'Furnished', 'Fitted Kitchen', 'Outside Kitchen', 'Dining Room', 'Sitting Room', 'En-suite Bedrooms', 'Balcony', 'Tiled Floor', 'Store Room', 'Garden', 'Swimming Pool', 'Servant Quarter', 'Generator', 'Air Conditioning', 'Other']
 const SIZE_UNITS = ['sqm', 'acre', 'plot', 'metre', 'feet']
 const SIZE_UNIT_LABELS: Record<string, string> = {
@@ -197,14 +198,13 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
           </div>
           <div className="col-md-4">
             <label className="form-label fw-semibold">{tr('Size unit')}</label>
-            <select
-              className="form-select"
+            <ResponsiveSelect
               value={d.sizeUnit}
-              onChange={(e) => set({ sizeUnit: e.target.value })}
-            >
-              <option value="">--</option>
-              {SIZE_UNITS.map((u) => <option key={u} value={u}>{tr(u)}</option>)}
-            </select>
+              placeholder="--"
+              options={SIZE_UNITS}
+              getLabel={(unit) => tr(SIZE_UNIT_LABELS[unit])}
+              onChange={(sizeUnit) => set({ sizeUnit })}
+            />
           </div>
         </div>
 
@@ -305,14 +305,13 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
           </div>
           <div className="col-md-4">
             <label className="form-label fw-semibold">{tr('Size unit')}</label>
-            <select
-              className="form-select"
+            <ResponsiveSelect
               value={d.sizeUnit}
-              onChange={(e) => set({ sizeUnit: e.target.value })}
-            >
-              <option value="">--</option>
-              {SIZE_UNITS.map((u) => <option key={u} value={u}>{tr(u)}</option>)}
-            </select>
+              placeholder="--"
+              options={SIZE_UNITS}
+              getLabel={(unit) => tr(SIZE_UNIT_LABELS[unit])}
+              onChange={(sizeUnit) => set({ sizeUnit })}
+            />
           </div>
         </div>
 
@@ -392,14 +391,13 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
         </div>
         <div className="col-md-4">
           <label className="form-label fw-semibold">{tr('Size unit')}</label>
-          <select
-            className="form-select"
+          <ResponsiveSelect
             value={d.sizeUnit}
-            onChange={(e) => set({ sizeUnit: e.target.value })}
-          >
-            <option value="">--</option>
-            {SIZE_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-          </select>
+            placeholder="--"
+            options={SIZE_UNITS}
+            getLabel={(unit) => tr(SIZE_UNIT_LABELS[unit])}
+            onChange={(sizeUnit) => set({ sizeUnit })}
+          />
         </div>
       </div>
 
