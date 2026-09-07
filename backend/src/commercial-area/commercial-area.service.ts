@@ -9,6 +9,7 @@ export class CommercialAreaService {
 
   create(createCommercialAreaDto: CreateCommercialAreaDto) {
     const {
+      features,
       images,
       documents,
       videos,
@@ -33,20 +34,21 @@ export class CommercialAreaService {
         region: regionId ? { connect: { id: regionId } } : undefined,
         district: districtId ? { connect: { id: districtId } } : undefined,
         ward: wardId ? { connect: { id: wardId } } : undefined,
+        features: features?.length ? { create: features.map((name) => ({ name })) } : undefined,
         images: images?.length ? { create: images } : undefined,
         documents: documents?.length ? { create: documents } : undefined,
         videos: videos?.length ? { create: videos } : undefined,
       } as any,
-      include: { broker: true, owner: true, images: true, documents: true, videos: true },
+      include: { broker: true, owner: true, features: true, images: true, documents: true, videos: true },
     });
   }
 
   findAll() {
-    return this.prisma.commercialArea.findMany({ include: { images: true, documents: true, videos: true } });
+    return this.prisma.commercialArea.findMany({ include: { features: true, images: true, documents: true, videos: true } });
   }
 
   findOne(id: string) {
-    return this.prisma.commercialArea.findUnique({ where: { id }, include: { propertyType: true, propertyCategory: true, broker: true, owner: true, region: true, district: true, ward: true, images: true, documents: true, videos: true } });
+    return this.prisma.commercialArea.findUnique({ where: { id }, include: { propertyType: true, propertyCategory: true, broker: true, owner: true, region: true, district: true, ward: true, features: true, images: true, documents: true, videos: true } });
   }
 
   update(id: string, updateCommercialAreaDto: UpdateCommercialAreaDto) {

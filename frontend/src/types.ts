@@ -77,6 +77,7 @@ export interface CommercialDetails {
   sizeUnit: string
   size: string
   commercialType: string
+  features: string[]
   status: string
   broker: PersonDetails
   owner: PersonDetails

@@ -15,6 +15,7 @@ const SIZE_UNIT_LABELS: Record<string, string> = {
 }
 const LAND_TYPES = ['Residential', 'Commercial', 'Agricultural', 'Mixed Use']
 const LAND_FEATURES = ['Road Access', 'Electricity', 'Water Supply', 'Borehole', 'Road Frontage', 'Tarmac Road Access', 'Corner Plot', 'Fence', 'Surveyed', 'Ready for Development', 'Closer to CBD', 'Other']
+const COMMERCIAL_FEATURES = ['Road Access', 'Electricity', 'Water Supply', 'Borehole', 'Parking', 'Elevator', 'Generator', 'Fiber Internet', 'Air Conditioning', 'CCTV', 'Security Guards', 'Wheelchair Accessible', 'Fire Safety System', 'Conference Room', 'Loading Bay', 'Closer to CBD', 'Other']
 const COMMERCIAL_BUILDING_TYPES = ['Office Building', 'Retail Shop', 'Showroom', 'Warehouse', 'Factory', 'Garage / Workshop', 'Hotel', 'Guest House', 'Restaurant Space', 'Bar / Lounge']
 const COMMERCIAL_LAND_TYPES = ['Commercial Plot', 'Industrial Plot', 'Yard', 'Car Wash', 'Petrol Station', 'Vehicle Parking Lot']
 
@@ -25,27 +26,83 @@ interface DetailsStepProps {
 }
 
 function FeatureChips({
-  options, selected, onToggle,
-}: { options: string[]; selected: string[]; onToggle: (v: string) => void }) {
+  options, selected, onToggle, onAddCustom, onRemoveCustom,
+}: {
+  options: string[]
+  selected: string[]
+  onToggle: (v: string) => void
+  onAddCustom: (v: string) => void
+  onRemoveCustom: (v: string) => void
+}) {
   const { tr } = useLanguage()
+  const [showCustomInput, setShowCustomInput] = useState(false)
+  const [customValue, setCustomValue] = useState('')
+  const customFeatures = selected.filter((f) => !options.includes(f))
+
+  const addCustom = () => {
+    const value = customValue.trim()
+    if (!value) return
+    onAddCustom(value)
+    setCustomValue('')
+  }
+
   return (
-    <div className="row g-2">
-      {options.map((opt) => {
-        const checked = selected.includes(opt)
-        return (
-          <div className="col-6 col-md-4" key={opt}>
-            <label className={`oweru-feature-chip ${checked ? 'checked' : ''}`}>
-              <input
-                type="checkbox"
-                className="form-check-input m-0"
-                checked={checked}
-                onChange={() => onToggle(opt)}
+    <div>
+      <div className="row g-2">
+        {options.map((opt) => {
+          const isOther = opt === 'Other'
+          const checked = isOther ? showCustomInput : selected.includes(opt)
+          return (
+            <div className="col-6 col-md-4" key={opt}>
+              <label className={`oweru-feature-chip ${checked ? 'checked' : ''}`}>
+                <input
+                  type="checkbox"
+                  className="form-check-input m-0"
+                  checked={checked}
+                  onChange={() => isOther ? setShowCustomInput((prev) => !prev) : onToggle(opt)}
+                />
+                {tr(opt)}
+              </label>
+            </div>
+          )
+        })}
+      </div>
+
+      {showCustomInput && (
+        <div className="d-flex gap-2 mt-2">
+          <input
+            className="form-control"
+            placeholder={tr('Write a feature...')}
+            value={customValue}
+            onChange={(e) => setCustomValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                addCustom()
+              }
+            }}
+          />
+          <button type="button" className="btn btn-oweru" onClick={addCustom}>
+            {tr('Add')}
+          </button>
+        </div>
+      )}
+
+      {customFeatures.length > 0 && (
+        <div className="d-flex flex-wrap gap-2 mt-2">
+          {customFeatures.map((feature) => (
+            <span className="oweru-feature-chip checked" key={feature}>
+              {feature}
+              <button
+                type="button"
+                className="btn-close btn-sm"
+                aria-label={tr('Remove')}
+                onClick={() => onRemoveCustom(feature)}
               />
-              {tr(opt)}
-            </label>
-          </div>
-        )
-      })}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -205,6 +262,8 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
               ? d.features.filter((f) => f !== v)
               : [...d.features, v],
           })}
+          onAddCustom={(v) => set({ features: d.features.includes(v) ? d.features : [...d.features, v] })}
+          onRemoveCustom={(v) => set({ features: d.features.filter((f) => f !== v) })}
         />
 
         <BrokerOwnerStatus
@@ -290,6 +349,8 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
               ? d.features.filter((f) => f !== v)
               : [...d.features, v],
           })}
+          onAddCustom={(v) => set({ features: d.features.includes(v) ? d.features : [...d.features, v] })}
+          onRemoveCustom={(v) => set({ features: d.features.filter((f) => f !== v) })}
         />
 
         <BrokerOwnerStatus
@@ -379,6 +440,19 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
           </button>
         ))}
       </div>
+
+      <label className="form-label fw-semibold d-block">{tr('Features & amenities')}</label>
+      <FeatureChips
+        options={COMMERCIAL_FEATURES}
+        selected={d.features}
+        onToggle={(v) => set({
+          features: d.features.includes(v)
+            ? d.features.filter((f) => f !== v)
+            : [...d.features, v],
+        })}
+        onAddCustom={(v) => set({ features: d.features.includes(v) ? d.features : [...d.features, v] })}
+        onRemoveCustom={(v) => set({ features: d.features.filter((f) => f !== v) })}
+      />
 
       <BrokerOwnerStatus
         status={d.status}

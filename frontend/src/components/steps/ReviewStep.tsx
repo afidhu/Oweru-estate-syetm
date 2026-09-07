@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import { houseForSaleApi, lookupApi } from '../../services/api'
 import type {
   CategoryId, CommercialDetails, DetailsData, HouseDetails, LandDetails, LocationData,
 } from '../../types'
@@ -22,6 +24,20 @@ export default function ReviewStep({ category, details, location }: ReviewStepPr
   const { tr } = useLanguage()
   const categoryTitle = tr(category === 'house-sale' ? 'House for Sale' : category === 'land-sale' ? 'Land for Sale' : 'Commercial Area')
 
+  const [houseTypes, setHouseTypes] = useState<{ id: string; name: string }[]>([])
+  const [landTypes, setLandTypes] = useState<{ id: string; name: string }[]>([])
+  const [propertyTypes, setPropertyTypes] = useState<{ id: string; name: string }[]>([])
+
+  useEffect(() => {
+    Promise.all([houseForSaleApi.getHouseTypes(), lookupApi.getLandTypes(), lookupApi.getPropertyTypes()])
+      .then(([nextHouseTypes, nextLandTypes, nextPropertyTypes]) => {
+        setHouseTypes(nextHouseTypes)
+        setLandTypes(nextLandTypes)
+        setPropertyTypes(nextPropertyTypes)
+      })
+      .catch((error) => console.error('Unable to load property type names:', error))
+  }, [])
+
   let typeLabel = ''
   let typeValue = ''
   let sizeValue = ''
@@ -29,18 +45,19 @@ export default function ReviewStep({ category, details, location }: ReviewStepPr
 
   if (category === 'house-sale') {
     const d = details as HouseDetails
-    typeLabel = tr('House type'); typeValue = d.houseType || tr('Not set')
+    typeLabel = tr('House type'); typeValue = tr(houseTypes.find((t) => t.id === d.houseType)?.name || 'Not set')
     sizeValue = d.size ? `${d.size} ${d.sizeUnit}` : '—'
     features = d.features
   } else if (category === 'land-sale') {
     const d = details as LandDetails
-    typeLabel = tr('Land type'); typeValue = d.landType || tr('Not set')
+    typeLabel = tr('Land type'); typeValue = tr(landTypes.find((t) => t.id === d.landType)?.name || 'Not set')
     sizeValue = d.size ? `${d.size} ${d.sizeUnit}` : '—'
     features = d.features
   } else {
     const d = details as CommercialDetails
-    typeLabel = tr('Commercial property type'); typeValue = d.commercialType || tr('Not set')
+    typeLabel = tr('Commercial property type'); typeValue = tr(propertyTypes.find((t) => t.id === d.commercialType)?.name || 'Not set')
     sizeValue = d.size ? `${d.size} ${d.sizeUnit}` : '—'
+    features = d.features
   }
 
   const salePrice = 'salePrice' in details ? details.salePrice : ''

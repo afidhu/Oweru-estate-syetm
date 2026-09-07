@@ -145,6 +145,11 @@ export class CreateCommercialAreaDto {
   language?: string;
 
   @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  features?: string[];
+
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CommercialImageInput)
   @IsOptional()
