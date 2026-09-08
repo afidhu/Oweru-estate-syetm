@@ -20,7 +20,7 @@ const emptyLocation: LocationData = {
 function makeDetails(category: CategoryId): DetailsData {
   const base = {
     propertyTitle: '', salePrice: '', sizeUnit: '', size: '',
-    status: 'ACTIVE',
+    status: 'PENDING',
     broker: { name: '', phone: '', nid: '', tin: '' },
     owner: { name: '', phone: '', nid: '', tin: '' },
   }
