@@ -76,4 +76,8 @@ export const lookupApi = {
   getPropertyTypes: async () => (await api.get('/commercial-area-property-type')).data,
 }
 
+export const authApi = {
+  login: async (username: string, password: string) => (await api.post('/auth/login', { username, password })).data,
+}
+
 export default api

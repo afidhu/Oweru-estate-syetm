@@ -74,7 +74,7 @@ export class CreateHouseForSaleDto {
 
   @IsString()
   @IsOptional()
-  @IsIn(['ACTIVE', 'PENDING', 'SOLD', 'ARCHIVED'])
+  @IsIn(['ACTIVE', 'PENDING', 'SOLD', 'ARCHIVED', 'APPROVED'])
   status?: string;
 
   @IsUUID()

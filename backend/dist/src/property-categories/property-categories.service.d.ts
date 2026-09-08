@@ -6,52 +6,52 @@ export declare class PropertyCategoriesService {
     constructor(prisma: PrismaService);
     create(createPropertyCategoryDto: CreatePropertyCategoryDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         title: string;
         slug: string;
         description: string | null;
         icon: string | null;
         accent: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     findAll(): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         title: string;
         slug: string;
         description: string | null;
         icon: string | null;
         accent: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         title: string;
         slug: string;
         description: string | null;
         icon: string | null;
         accent: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     } | null>;
     update(id: string, updatePropertyCategoryDto: UpdatePropertyCategoryDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         title: string;
         slug: string;
         description: string | null;
         icon: string | null;
         accent: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(id: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         title: string;
         slug: string;
         description: string | null;
         icon: string | null;
         accent: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }

@@ -12,6 +12,22 @@ datasource db {
   provider = "mysql"
 }
 
+enum UserRole {
+  ADMIN
+  MARKETER
+  DIRECTOR
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   
+  email     String   @unique
+  password  String
+  role      String   @default("DIRECTOR") // USER | ADMIN
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model PropertyCategory {
   id                 String           @id @default(uuid())
   title              String           @unique // "House for rent", "House for sale", "Land for sale"...
@@ -129,7 +145,7 @@ model HouseForSale {
   bedrooms  Int?
   bathrooms Int?
 
-  status String @default("PENDING") // ACTIVE, PENDING, SOLD, ARCHIVED
+  status String @default("PENDING") // ACTIVE, PENDING, SOLD, APPROVED
 
   propertyCategory   PropertyCategory? @relation(fields: [propertyCategoryId], references: [id])
   propertyCategoryId String?

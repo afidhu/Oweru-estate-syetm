@@ -29,6 +29,7 @@ export default function LocationImagesStep({
   const [isMapReady, setIsMapReady] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
   const [videoError, setVideoError] = useState("");
+  const [preview, setPreview] = useState<{ type: "image" | "video"; src: string } | null>(null);
 
   // Seeded from the bundled Tanzania regions/districts/wards dataset so the
   // dropdowns work immediately; replaced with live API data (real DB ids)
@@ -257,9 +258,45 @@ export default function LocationImagesStep({
           accept="image/*"
           multiple
           hidden
-          onChange={(e) => set({ images: Array.from(e.target.files ?? []) })}
+          onChange={(e) => {
+            const picked = Array.from(e.target.files ?? [])
+            if (picked.length) set({ images: [...location.images, ...picked] })
+            e.target.value = ""
+          }}
         />
       </label>
+
+      {location.images.length > 0 && (
+        <ul className="list-group mt-2">
+          {location.images.map((img, i) => (
+            <li key={`${img.name}-${i}`} className="list-group-item d-flex align-items-center justify-content-between gap-2">
+              <span className="text-truncate">
+                <i className="bi bi-image me-2" />
+                {img.name}
+                <small className="text-muted ms-2">{(img.size / 1024 / 1024).toFixed(2)} MB</small>
+              </span>
+              <span className="d-flex gap-1 flex-shrink-0">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  aria-label={tr("View")}
+                  onClick={() => setPreview({ type: "image", src: URL.createObjectURL(img) })}
+                >
+                  <i className="bi bi-eye" />
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
+                  aria-label={tr("Remove")}
+                  onClick={() => set({ images: location.images.filter((_, idx) => idx !== i) })}
+                >
+                  <i className="bi bi-x-lg" />
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <label className="form-label fw-semibold d-block mt-3">{tr("Property video")}</label>
       <label className="oweru-upload-box d-block mb-1">
@@ -279,7 +316,32 @@ export default function LocationImagesStep({
       )}
       {videoError && <div className="text-danger small mb-2">{videoError}</div>}
       {location.videoUrl && (
-        <video className="oweru-video-preview mb-3" controls preload="metadata" src={getUploadUrl(location.videoUrl)} />
+        <ul className="list-group mb-3 mt-2">
+          <li className="list-group-item d-flex align-items-center justify-content-between gap-2">
+            <span className="text-truncate">
+              <i className="bi bi-camera-video me-2" />
+              {tr("Video uploaded")}
+            </span>
+            <span className="d-flex gap-1 flex-shrink-0">
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                aria-label={tr("View")}
+                onClick={() => setPreview({ type: "video", src: getUploadUrl(location.videoUrl) })}
+              >
+                <i className="bi bi-eye" />
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-danger"
+                aria-label={tr("Remove")}
+                onClick={() => set({ videoUrl: "", videoFileType: "", videoSizeBytes: null })}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </span>
+          </li>
+        </ul>
       )}
 
       <label className="form-label fw-semibold d-block mt-3">
@@ -297,14 +359,98 @@ export default function LocationImagesStep({
             : tr("Attach documents")}
         <input
           type="file"
-          accept="application/pdf,image/*"
           multiple
           hidden
           disabled={videoProgress > 0 && videoProgress < 100}
-          onChange={(e) => set({ documents: Array.from(e.target.files ?? []) })}
+          onChange={(e) => {
+            const picked = Array.from(e.target.files ?? [])
+            if (picked.length) set({ documents: [...location.documents, ...picked] })
+            e.target.value = ""
+          }}
         />
       </label>
-      <p className="text-muted small mb-0">{tr("Title deed, survey plan, sale agreement — PDF or a photo, up to 15 MB each. They upload when the record is saved, and more can be added later.")}</p>
+      <p className="text-muted small mb-0">{tr("Title deed, survey plan, sale agreement — any file type, up to 15 MB each. They upload when the record is saved, and more can be added later.")}</p>
+
+      {location.documents.length > 0 && (
+        <ul className="list-group mt-2">
+          {location.documents.map((doc, i) => (
+            <li key={`${doc.name}-${i}`} className="list-group-item d-flex align-items-center justify-content-between gap-2">
+              <span className="text-truncate">
+                <i className="bi bi-file-earmark me-2" />
+                {doc.name}
+                <small className="text-muted ms-2">{(doc.size / 1024 / 1024).toFixed(2)} MB</small>
+              </span>
+              <span className="d-flex gap-1 flex-shrink-0">
+                <a
+                  className="btn btn-sm btn-outline-secondary"
+                  href={URL.createObjectURL(doc)}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={tr("View")}
+                >
+                  <i className="bi bi-eye" />
+                </a>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
+                  aria-label={tr("Remove")}
+                  onClick={() => set({ documents: location.documents.filter((_, idx) => idx !== i) })}
+                >
+                  <i className="bi bi-x-lg" />
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {preview && (
+        <div
+          className="oweru-media-preview-backdrop"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setPreview(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1080,
+            background: "rgba(0,0,0,.75)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ position: "relative", maxWidth: "100%", maxHeight: "100%" }}
+          >
+            <button
+              type="button"
+              className="btn btn-light btn-sm"
+              aria-label={tr("Close")}
+              onClick={() => setPreview(null)}
+              style={{ position: "absolute", top: "-12px", right: "-12px", borderRadius: "50%", zIndex: 1 }}
+            >
+              <i className="bi bi-x-lg" />
+            </button>
+            {preview.type === "image" ? (
+              <img
+                src={preview.src}
+                alt=""
+                style={{ maxWidth: "90vw", maxHeight: "85vh", objectFit: "contain", borderRadius: "8px", display: "block" }}
+              />
+            ) : (
+              <video
+                src={preview.src}
+                controls
+                autoPlay
+                style={{ maxWidth: "90vw", maxHeight: "85vh", borderRadius: "8px", display: "block", background: "#000" }}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
