@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Controller,
   HttpCode,
   Post,
@@ -27,11 +26,8 @@ export class UploadsController {
       },
     }),
     limits: { fileSize: 30 * 1024 * 1024 },
-    fileFilter: (_request, file, callback) => {
-      const extension = extname(file.originalname).toLowerCase();
-      const acceptedVideo = file.mimetype.startsWith('video/') || ['.mp4', '.mkv', '.mov', '.avi', '.webm', '.m4v', '.3gp'].includes(extension);
-      const accepted = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf' || acceptedVideo;
-      callback(accepted ? null : new BadRequestException('Only images, videos, and PDF documents are allowed.'), accepted);
+    fileFilter: (_request, _file, callback) => {
+      callback(null, true);
     },
   }))
   upload(@UploadedFiles() files: Array<{ filename: string; originalname: string; mimetype: string; size: number }> = []) {

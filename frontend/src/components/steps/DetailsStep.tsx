@@ -7,7 +7,7 @@ import type {
 import { useLanguage } from '../../i18n'
 import ResponsiveSelect from '../shared/ResponsiveSelect'
 const HOUSE_FEATURES = ['Road Access', 'Electricity', 'Water Supply', 'Borehole', 'Parking', 'Security', 'CCTV', 'Fence', 'Furnished', 'Fitted Kitchen', 'Outside Kitchen', 'Dining Room', 'Sitting Room', 'En-suite Bedrooms', 'Balcony', 'Tiled Floor', 'Store Room', 'Garden', 'Swimming Pool', 'Servant Quarter', 'Generator', 'Air Conditioning', 'Other']
-const SIZE_UNITS = ['sqm', 'acre', 'plot', 'metre', 'feet']
+const SIZE_UNITS = ['sqm', 'acre', 'metre', 'feet']
 const SIZE_UNIT_LABELS: Record<string, string> = {
   'sqm': 'sqm',
   'acre': 'acre',
@@ -20,6 +20,42 @@ const LAND_FEATURES = ['Road Access', 'Electricity', 'Water Supply', 'Borehole',
 const COMMERCIAL_FEATURES = ['Road Access', 'Electricity', 'Water Supply', 'Borehole', 'Parking', 'Elevator', 'Generator', 'Fiber Internet', 'Air Conditioning', 'CCTV', 'Security Guards', 'Wheelchair Accessible', 'Fire Safety System', 'Conference Room', 'Loading Bay', 'Closer to CBD', 'Other']
 const COMMERCIAL_BUILDING_TYPES = ['Office Building', 'Retail Shop', 'Showroom', 'Warehouse', 'Factory', 'Garage / Workshop', 'Hotel', 'Guest House', 'Restaurant Space', 'Bar / Lounge']
 const COMMERCIAL_LAND_TYPES = ['Commercial Plot', 'Industrial Plot', 'Yard', 'Car Wash', 'Petrol Station', 'Vehicle Parking Lot']
+
+const digitsOnly = (raw: string) => raw.replace(/\D/g, '')
+const groupThousands = (raw: string) => {
+  const d = digitsOnly(raw)
+  return d ? Number(d).toLocaleString('en-US') : ''
+}
+
+function ErrorText({ show, message }: { show: boolean; message: string }) {
+  if (!show) return null
+  return (
+    <div className="text-danger small mt-1">
+      <i className="bi bi-exclamation-circle me-1" />
+      {message}
+    </div>
+  )
+}
+
+function SizeField({ unit, value, onChange }: { unit: string; value: string; onChange: (v: string) => void }) {
+  const { tr } = useLanguage()
+  const dimensional = unit === 'metre' || unit === 'feet'
+  if (dimensional) {
+    const [w = '', l = ''] = value.split(/\s*[x×]\s*/i)
+    const emit = (nw: string, nl: string) => onChange(nw || nl ? `${nw} x ${nl}` : '')
+    return (
+      <div className="d-flex align-items-center gap-2 mb-3" style={{ maxWidth: 320 }}>
+        <input type="number" min="0" className="form-control" placeholder={tr('Width')} value={w} onChange={(e) => emit(e.target.value, l)} />
+        <span className="fw-semibold">×</span>
+        <input type="number" min="0" className="form-control" placeholder={tr('Length')} value={l} onChange={(e) => emit(w, e.target.value)} />
+        <span className="text-muted text-nowrap">{tr(unit)}</span>
+      </div>
+    )
+  }
+  return (
+    <input className="form-control mb-3" placeholder={tr('e.g. 3 x 4')} value={value} onChange={(e) => onChange(e.target.value)} />
+  )
+}
 
 interface DetailsStepProps {
   category: CategoryId
@@ -118,14 +154,22 @@ function BrokerOwnerStatus({
   onField: (field: 'status' | 'broker' | 'owner', value: string | PersonDetails) => void
 }) {
   const { tr } = useLanguage()
-  const personFields = (person: PersonDetails, field: 'broker' | 'owner') => (
-    <>
-      <input className="form-control" placeholder={tr('Full name')} value={person.name} required onChange={(e) => onField(field, { ...person, name: e.target.value })} />
-      <input className="form-control mt-2" placeholder={tr('WhatsApp phone number (+255)')} value={person.phone} required onChange={(e) => onField(field, { ...person, phone: e.target.value })} />
-      <input className="form-control mt-2" placeholder={tr('NIDA (optional)')} value={person.nid} onChange={(e) => onField(field, { ...person, nid: e.target.value })} />
-      <input className="form-control mt-2" placeholder={tr('TIN (optional)')} value={person.tin} onChange={(e) => onField(field, { ...person, tin: e.target.value })} />
-    </>
-  )
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const mark = (k: string) => setTouched((t) => ({ ...t, [k]: true }))
+  const personFields = (person: PersonDetails, field: 'broker' | 'owner') => {
+    const nameEmpty = !person.name.trim()
+    const phoneEmpty = !person.phone.trim()
+    return (
+      <>
+        <input className={`form-control ${touched[`${field}.name`] && nameEmpty ? 'is-invalid' : ''}`} placeholder={tr('Full name')} value={person.name} required onBlur={() => mark(`${field}.name`)} onChange={(e) => onField(field, { ...person, name: e.target.value })} />
+        <ErrorText show={touched[`${field}.name`] && nameEmpty} message={tr('Full name is required')} />
+        <input className={`form-control mt-2 ${touched[`${field}.phone`] && phoneEmpty ? 'is-invalid' : ''}`} placeholder={tr('WhatsApp phone number (+255)')} value={person.phone} required onBlur={() => mark(`${field}.phone`)} onChange={(e) => onField(field, { ...person, phone: e.target.value })} />
+        <ErrorText show={touched[`${field}.phone`] && phoneEmpty} message={tr('Phone number is required')} />
+        <input className="form-control mt-2" placeholder={tr('NIDA (optional)')} value={person.nid} onChange={(e) => onField(field, { ...person, nid: e.target.value })} />
+        <input className="form-control mt-2" placeholder={tr('TIN (optional)')} value={person.tin} onChange={(e) => onField(field, { ...person, tin: e.target.value })} />
+      </>
+    )
+  }
   return (
     <div className="row g-3 mt-1">
       {/* <div className="col-md-4">
@@ -156,6 +200,10 @@ function BrokerOwnerStatus({
 
 export default function DetailsStep({ category, details, onChange }: DetailsStepProps) {
   const { tr } = useLanguage()
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const mark = (k: string) => setTouched((t) => ({ ...t, [k]: true }))
+  const invalid = (k: string, empty: boolean) => (touched[k] && empty ? 'is-invalid' : '')
+  const started = Object.keys(touched).length > 0
   const { data: houseTypes = [] } = useQuery<{ id: string; name: string }[]>({ queryKey: ['house-types'], queryFn: houseForSaleApi.getHouseTypes })
   const { data: landTypes = [] } = useQuery<{ id: string; name: string }[]>({ queryKey: ['land-types'], queryFn: lookupApi.getLandTypes })
   const { data: propertyTypes = [] } = useQuery<{ id: string; name: string }[]>({ queryKey: ['commercial-property-types'], queryFn: lookupApi.getPropertyTypes })
@@ -171,21 +219,27 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
 
         <label className="form-label fw-semibold">{tr('Property title')}</label>
         <input
-          className="form-control mb-3"
+          className={`form-control mb-2 ${invalid('propertyTitle', !d.propertyTitle.trim())}`}
           placeholder="e.g. 4 Bedroom House for Sale in Masaki"
           value={d.propertyTitle}
+          onBlur={() => mark('propertyTitle')}
           onChange={(e) => set({ propertyTitle: e.target.value })}
         />
+        <ErrorText show={Boolean(touched['propertyTitle'] && !d.propertyTitle.trim())} message={tr('Property title is required')} />
 
         <div className="row g-3 mb-3">
           <div className="col-md-8">
             <label className="form-label fw-semibold">{tr('Sale price (TZS)')}</label>
             <input
-              type="number"
-              className="form-control"
-              value={d.salePrice}
-              onChange={(e) => set({ salePrice: e.target.value })}
+              type="text"
+              inputMode="numeric"
+              placeholder="e.g. 1,000,000"
+              className={`form-control ${invalid('salePrice', !d.salePrice)}`}
+              value={groupThousands(d.salePrice)}
+              onBlur={() => mark('salePrice')}
+              onChange={(e) => set({ salePrice: digitsOnly(e.target.value) })}
             />
+            <ErrorText show={Boolean(touched['salePrice'] && !d.salePrice)} message={tr('Sale price is required')} />
           </div>
           <div className="col-md-4">
             <label className="form-label fw-semibold">{tr('Size unit')}</label>
@@ -199,12 +253,8 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
           </div>
         </div>
 
-        <label className="form-label fw-semibold">{tr('Size')}</label>
-        <input
-          className="form-control mb-3"
-          value={d.size}
-          onChange={(e) => set({ size: e.target.value })}
-        />
+        <label className="form-label fw-semibold d-block">{tr('Size')}</label>
+        <SizeField unit={d.sizeUnit} value={d.size} onChange={(size) => set({ size })} />
 
         <label className="form-label fw-semibold d-block">{tr('House type')}</label>
         <div className="d-flex flex-wrap gap-3 mb-3">
@@ -222,6 +272,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
             </div>
           ))}
         </div>
+        <ErrorText show={started && !d.houseType} message={tr('Please select a house type')} />
 
         <div className="row g-3 mb-3">
           <div className="col-md-6">
@@ -229,6 +280,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
             <input
               type="number"
               className="form-control"
+              placeholder="e.g. 3"
               value={d.bedrooms}
               onChange={(e) => set({ bedrooms: e.target.value })}
             />
@@ -238,6 +290,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
             <input
               type="number"
               className="form-control"
+              placeholder="e.g. 2"
               value={d.bathrooms}
               onChange={(e) => set({ bathrooms: e.target.value })}
             />
@@ -278,21 +331,27 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
 
         <label className="form-label fw-semibold">{tr('Property title')}</label>
         <input
-          className="form-control mb-3"
+          className={`form-control mb-2 ${invalid('propertyTitle', !d.propertyTitle.trim())}`}
           placeholder="e.g. 2-Acre Plot for Sale in Bagamoyo"
           value={d.propertyTitle}
+          onBlur={() => mark('propertyTitle')}
           onChange={(e) => set({ propertyTitle: e.target.value })}
         />
+        <ErrorText show={Boolean(touched['propertyTitle'] && !d.propertyTitle.trim())} message={tr('Property title is required')} />
 
         <div className="row g-3 mb-3">
           <div className="col-md-8">
             <label className="form-label fw-semibold">{tr('Sale price (TZS)')}</label>
             <input
-              type="number"
-              className="form-control"
-              value={d.salePrice}
-              onChange={(e) => set({ salePrice: e.target.value })}
+              type="text"
+              inputMode="numeric"
+              placeholder="e.g. 1,000,000"
+              className={`form-control ${invalid('salePrice', !d.salePrice)}`}
+              value={groupThousands(d.salePrice)}
+              onBlur={() => mark('salePrice')}
+              onChange={(e) => set({ salePrice: digitsOnly(e.target.value) })}
             />
+            <ErrorText show={Boolean(touched['salePrice'] && !d.salePrice)} message={tr('Sale price is required')} />
           </div>
           <div className="col-md-4">
             <label className="form-label fw-semibold">{tr('Size unit')}</label>
@@ -306,12 +365,8 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
           </div>
         </div>
 
-        <label className="form-label fw-semibold">{tr('Size')}</label>
-        <input
-          className="form-control mb-3"
-          value={d.size}
-          onChange={(e) => set({ size: e.target.value })}
-        />
+        <label className="form-label fw-semibold d-block">{tr('Size')}</label>
+        <SizeField unit={d.sizeUnit} value={d.size} onChange={(size) => set({ size })} />
 
         <label className="form-label fw-semibold d-block">{tr('Land type')}</label>
         <div className="d-flex flex-wrap gap-3 mb-3">
@@ -329,6 +384,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
             </div>
           ))}
         </div>
+        <ErrorText show={started && !d.landType} message={tr('Please select a land type')} />
 
         <label className="form-label fw-semibold d-block">{tr('Features & amenities')}</label>
         <FeatureChips
@@ -364,21 +420,27 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
 
       <label className="form-label fw-semibold">{tr('Property title')}</label>
       <input
-        className="form-control mb-3"
+        className={`form-control mb-2 ${invalid('propertyTitle', !d.propertyTitle.trim())}`}
         placeholder="e.g. Office Building for Sale in Upanga"
         value={d.propertyTitle}
+        onBlur={() => mark('propertyTitle')}
         onChange={(e) => set({ propertyTitle: e.target.value })}
       />
+      <ErrorText show={Boolean(touched['propertyTitle'] && !d.propertyTitle.trim())} message={tr('Property title is required')} />
 
       <div className="row g-3 mb-3">
         <div className="col-md-8">
           <label className="form-label fw-semibold">{tr('Sale price (TZS)')}</label>
           <input
-            type="number"
-            className="form-control"
-            value={d.salePrice}
-            onChange={(e) => set({ salePrice: e.target.value })}
+            type="text"
+            inputMode="numeric"
+            placeholder="e.g. 1,000,000"
+            className={`form-control ${invalid('salePrice', !d.salePrice)}`}
+            value={groupThousands(d.salePrice)}
+            onBlur={() => mark('salePrice')}
+            onChange={(e) => set({ salePrice: digitsOnly(e.target.value) })}
           />
+          <ErrorText show={Boolean(touched['salePrice'] && !d.salePrice)} message={tr('Sale price is required')} />
         </div>
         <div className="col-md-4">
           <label className="form-label fw-semibold">{tr('Size unit')}</label>
@@ -392,12 +454,8 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
         </div>
       </div>
 
-      <label className="form-label fw-semibold">{tr('Size')}</label>
-      <input
-        className="form-control mb-3"
-        value={d.size}
-        onChange={(e) => set({ size: e.target.value })}
-      />
+      <label className="form-label fw-semibold d-block">{tr('Size')}</label>
+      <SizeField unit={d.sizeUnit} value={d.size} onChange={(size) => set({ size })} />
 
       <label className="form-label fw-semibold d-block">{tr('Commercial property type')}</label>
       <p className="text-muted small mb-2">{tr('Buildings and open land plots show different amenities.')}</p>
@@ -429,6 +487,7 @@ export default function DetailsStep({ category, details, onChange }: DetailsStep
           </button>
         ))}
       </div>
+      <ErrorText show={started && !d.commercialType} message={tr('Please select a property type')} />
 
       <label className="form-label fw-semibold d-block">{tr('Features & amenities')}</label>
       <FeatureChips
