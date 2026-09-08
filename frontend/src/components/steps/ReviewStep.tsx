@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { houseForSaleApi, lookupApi } from '../../services/api'
 import type {
   CategoryId, CommercialDetails, DetailsData, HouseDetails, LandDetails, LocationData,
@@ -24,19 +24,9 @@ export default function ReviewStep({ category, details, location }: ReviewStepPr
   const { tr } = useLanguage()
   const categoryTitle = tr(category === 'house-sale' ? 'House for Sale' : category === 'land-sale' ? 'Land for Sale' : 'Commercial Area')
 
-  const [houseTypes, setHouseTypes] = useState<{ id: string; name: string }[]>([])
-  const [landTypes, setLandTypes] = useState<{ id: string; name: string }[]>([])
-  const [propertyTypes, setPropertyTypes] = useState<{ id: string; name: string }[]>([])
-
-  useEffect(() => {
-    Promise.all([houseForSaleApi.getHouseTypes(), lookupApi.getLandTypes(), lookupApi.getPropertyTypes()])
-      .then(([nextHouseTypes, nextLandTypes, nextPropertyTypes]) => {
-        setHouseTypes(nextHouseTypes)
-        setLandTypes(nextLandTypes)
-        setPropertyTypes(nextPropertyTypes)
-      })
-      .catch((error) => console.error('Unable to load property type names:', error))
-  }, [])
+  const { data: houseTypes = [] } = useQuery<{ id: string; name: string }[]>({ queryKey: ['house-types'], queryFn: houseForSaleApi.getHouseTypes })
+  const { data: landTypes = [] } = useQuery<{ id: string; name: string }[]>({ queryKey: ['land-types'], queryFn: lookupApi.getLandTypes })
+  const { data: propertyTypes = [] } = useQuery<{ id: string; name: string }[]>({ queryKey: ['commercial-property-types'], queryFn: lookupApi.getPropertyTypes })
 
   let typeLabel = ''
   let typeValue = ''

@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import api, { getUploadUrl } from '../../../services/api'
 import type { PropertyCategoryRecord } from '../../../types'
@@ -10,6 +11,7 @@ type ListingKind = 'house-for-sale' | 'land-for-sale' | 'commercial-area'
 interface Listing { id: string; title: string; status?: string; salePrice?: string | number | null; createdAt?: string; broker?: { name: string }; owner?: { name: string }; category: ListingKind }
 interface ListingDetail extends Listing { [key: string]: any }
 interface Person { id: string; name: string; phone: string; email?: string | null; nid?: string | null; tin?: string | null }
+interface DashboardData { listings: Listing[]; brokers: Person[]; owners: Person[]; categories: PropertyCategoryRecord[] }
 
 const labels: Record<ListingKind, string> = { 'house-for-sale': 'Houses', 'land-for-sale': 'Land', 'commercial-area': 'Commercial' }
 const emptyPerson = { name: '', phone: '', email: '', nid: '', tin: '' }
@@ -20,15 +22,10 @@ const money = (value: Listing['salePrice']) => value === null || value === undef
 
 export default function Dashboard() {
   const [section, setSection] = useState<Section>('overview')
-  const [listings, setListings] = useState<Listing[]>([])
-  const [brokers, setBrokers] = useState<Person[]>([])
-  const [owners, setOwners] = useState<Person[]>([])
-  const [categories, setCategories] = useState<PropertyCategoryRecord[]>([])
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('ALL')
   const [kindFilter, setKindFilter] = useState<'ALL' | ListingKind>('ALL')
   const [personKind, setPersonKind] = useState<PersonKind>('brokers')
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -38,27 +35,49 @@ export default function Dashboard() {
   const [categoryForm, setCategoryForm] = useState(emptyCategory)
   const [listingModal, setListingModal] = useState<Listing | null>(null)
   const [viewListing, setViewListing] = useState<ListingDetail | null>(null)
-  const [viewLoading, setViewLoading] = useState(false)
+  const [listingToView, setListingToView] = useState<Listing | null>(null)
   const [addListingOpen, setAddListingOpen] = useState(false)
   const [newListing, setNewListing] = useState({ kind: 'house-for-sale' as ListingKind, title: '', salePrice: '', listingType: 'SALE' })
-
-  async function loadData() {
-    setLoading(true); setError('')
-    try {
+  const queryClient = useQueryClient()
+  const { data: dashboardData, isLoading: loading, isError: dashboardQueryError } = useQuery<DashboardData>({
+    queryKey: ['dashboard-data'],
+    queryFn: async () => {
       const [houses, land, commercial, brokerData, ownerData, categoryData] = await Promise.all([
         api.get('/house-for-sale'), api.get('/land-for-sale'), api.get('/commercial-area'), api.get('/brokers'), api.get('/owners'), api.get('/property-categories'),
       ])
-      setListings([
-        ...(houses.data as Listing[]).map((item) => ({ ...item, category: 'house-for-sale' as const })),
-        ...(land.data as Listing[]).map((item) => ({ ...item, category: 'land-for-sale' as const })),
-        ...(commercial.data as Listing[]).map((item) => ({ ...item, category: 'commercial-area' as const })),
-      ])
-      setBrokers(brokerData.data); setOwners(ownerData.data); setCategories(categoryData.data)
-    } catch (requestError) { console.error(requestError); setError('Unable to load dashboard data. Check that the API is running.') }
-    finally { setLoading(false) }
-  }
+      return {
+        listings: [
+          ...(houses.data as Listing[]).map((item) => ({ ...item, category: 'house-for-sale' as const })),
+          ...(land.data as Listing[]).map((item) => ({ ...item, category: 'land-for-sale' as const })),
+          ...(commercial.data as Listing[]).map((item) => ({ ...item, category: 'commercial-area' as const })),
+        ],
+        brokers: brokerData.data,
+        owners: ownerData.data,
+        categories: categoryData.data,
+      }
+    },
+  })
+  const { data: viewListingData, isFetching: viewLoading, isError: viewQueryError } = useQuery<ListingDetail>({
+    queryKey: ['listing-detail', listingToView?.category, listingToView?.id],
+    queryFn: async () => {
+      const response = await api.get(`${endpoint(listingToView!.category)}/${listingToView!.id}`)
+      return { ...response.data, category: listingToView!.category }
+    },
+    enabled: Boolean(listingToView),
+  })
+  useEffect(() => {
+    if (viewListingData) setViewListing(viewListingData)
+  }, [viewListingData])
+  const listings = dashboardData?.listings ?? []
+  const brokers = dashboardData?.brokers ?? []
+  const owners = dashboardData?.owners ?? []
+  const categories = dashboardData?.categories ?? []
+  const dashboardError = dashboardQueryError ? 'Unable to load dashboard data. Check that the API is running.' : ''
 
-  useEffect(() => { void loadData() }, [])
+  async function loadData() {
+    setError('')
+    await queryClient.invalidateQueries({ queryKey: ['dashboard-data'] })
+  }
   const filteredListings = useMemo(() => listings.filter((listing) => {
     const text = `${listing.title} ${listing.broker?.name ?? ''} ${listing.owner?.name ?? ''}`.toLowerCase()
     return (kindFilter === 'ALL' || listing.category === kindFilter) && (status === 'ALL' || listing.status === status) && text.includes(query.toLowerCase())
@@ -103,14 +122,8 @@ export default function Dashboard() {
     try { await api.delete(`${endpoint(listing.category)}/${listing.id}`); await loadData(); flash('Listing deleted.') } catch (requestError) { console.error(requestError); setError('The listing could not be deleted.') }
   }
   async function viewListingDetails(listing: Listing) {
-    setViewLoading(true)
-    try {
-      const response = await api.get(`${endpoint(listing.category)}/${listing.id}`)
-      setViewListing({ ...response.data, category: listing.category })
-    } catch (requestError) {
-      console.error(requestError)
-      setError('The listing details could not be loaded.')
-    } finally { setViewLoading(false) }
+    setViewListing(null)
+    setListingToView(listing)
   }
   async function addListing(event: FormEvent) {
     event.preventDefault(); if (!newListing.title.trim() || !newListing.salePrice) return; setSaving(true)
@@ -121,7 +134,7 @@ export default function Dashboard() {
   return <div className="admin-shell">
     <aside className="admin-sidebar"><a className="admin-brand" href="/"><span className="admin-brand-mark">O</span><span>oweru<span>estate</span></span></a><div className="admin-sidebar-label">Workspace</div><nav className="admin-nav">{([['overview', 'grid-1x2', 'Overview'], ['listings', 'buildings', 'Listings'], ['people', 'people', 'People'], ['categories', 'tags', 'Categories']] as const).map(([value, icon, label]) => <button key={value} className={section === value ? 'active' : ''} onClick={() => setSection(value)}><i className={`bi bi-${icon}`} /> {label}{value === 'listings' && <span className="admin-nav-count">{listings.length}</span>}{value === 'categories' && <span className="admin-nav-count">{categories.length}</span>}</button>)}</nav><div className="admin-sidebar-bottom"><div className="admin-user-avatar">AD</div><div><strong>Administrator</strong><small>Estate operations</small></div></div></aside>
     <main className="admin-main"><header className="admin-topbar"><div><span className="admin-kicker">Operations center</span><h1>{section === 'overview' ? 'Good morning, Admin' : section === 'listings' ? 'Property listings' : section === 'people' ? 'People directory' : 'Property categories'}</h1></div><div className="admin-top-actions"><span className="admin-live"><span /> Live data</span><button className="admin-icon-button" title="Refresh data" onClick={() => void loadData()}><i className="bi bi-arrow-clockwise" /></button><button className="admin-primary" onClick={() => section === 'people' ? openPerson(personKind) : section === 'categories' ? openCategory() : setAddListingOpen(true)}><i className="bi bi-plus-lg" /> {section === 'people' ? 'Add person' : section === 'categories' ? 'Add category' : 'Add listing'}</button></div></header>
-      {error && <div className="admin-alert error"><i className="bi bi-exclamation-circle" /> {error}<button onClick={() => setError('')}><i className="bi bi-x" /></button></div>}{notice && <div className="admin-alert success"><i className="bi bi-check-circle" /> {notice}</div>}
+      {(error || dashboardError || viewQueryError) && <div className="admin-alert error"><i className="bi bi-exclamation-circle" /> {error || dashboardError || 'The listing details could not be loaded.'}<button onClick={() => setError('')}><i className="bi bi-x" /></button></div>}{notice && <div className="admin-alert success"><i className="bi bi-check-circle" /> {notice}</div>}
       {section === 'overview' && <><section className="admin-metrics"><Metric icon="buildings" label="Total listings" value={listings.length} detail="Across all property types" tone="navy" /><Metric icon="check2-circle" label="Active listings" value={active} detail={`${listings.length ? Math.round(active / listings.length * 100) : 0}% of portfolio`} tone="gold" /><Metric icon="hourglass-split" label="Needs attention" value={pending} detail="Pending review" tone="coral" /><Metric icon="people" label="People managed" value={brokers.length + owners.length} detail={`${brokers.length} brokers - ${owners.length} owners`} tone="green" /></section><div className="admin-content-grid"><section className="admin-panel admin-panel-wide"><PanelHeading title="Recent listings" action="View all" onAction={() => setSection('listings')} />{loading ? <Loading /> : <ListingTable listings={listings.slice(0, 6)} onEdit={setListingModal} onDelete={deleteListing} onView={viewListingDetails} />}</section><section className="admin-panel"><PanelHeading title="Portfolio mix" /><div className="portfolio-list">{(Object.keys(labels) as ListingKind[]).map((kind) => { const count = listings.filter((item) => item.category === kind).length; return <div className="portfolio-row" key={kind}><span className={`portfolio-icon ${kind}`}><i className={`bi bi-${kind === 'house-for-sale' ? 'house' : kind === 'land-for-sale' ? 'geo' : 'shop'}`} /></span><div><strong>{labels[kind]}</strong><small>{count} listings</small></div><b>{listings.length ? Math.round(count / listings.length * 100) : 0}%</b></div> })}</div><div className="admin-mini-note"><i className="bi bi-shield-check" /><span><strong>All systems operational</strong><small>Last synced just now</small></span></div></section></div></>}
       {section === 'listings' && <section className="admin-panel admin-full-panel"><div className="admin-toolbar"><Search value={query} onChange={setQuery} placeholder="Search title, owner or broker" /><select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as typeof kindFilter)}><option value="ALL">All property types</option>{(Object.keys(labels) as ListingKind[]).map((kind) => <option key={kind} value={kind}>{labels[kind]}</option>)}</select><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="ALL">All statuses</option><option>ACTIVE</option><option>PENDING</option><option>SOLD</option><option>ARCHIVED</option></select></div>{loading ? <Loading /> : <ListingTable listings={filteredListings} onEdit={setListingModal} onDelete={deleteListing} onView={viewListingDetails} emptyMessage="No listings match your filters." />}</section>}
       {section === 'people' && <section className="admin-panel admin-full-panel"><div className="people-tabs"><button className={personKind === 'brokers' ? 'active' : ''} onClick={() => setPersonKind('brokers')}><i className="bi bi-briefcase" /> Brokers <b>{brokers.length}</b></button><button className={personKind === 'owners' ? 'active' : ''} onClick={() => setPersonKind('owners')}><i className="bi bi-person" /> Owners <b>{owners.length}</b></button><div className="people-search"><Search value={query} onChange={setQuery} placeholder="Search people" /></div></div><PeopleTable people={(personKind === 'brokers' ? brokers : owners).filter((person) => `${person.name} ${person.phone} ${person.email ?? ''}`.toLowerCase().includes(query.toLowerCase()))} kind={personKind} onEdit={openPerson} onDelete={deletePerson} /></section>}
@@ -131,7 +144,7 @@ export default function Dashboard() {
     {categoryModal && <Modal title={`${categoryModal.id ? 'Edit' : 'Add'} category`} onClose={() => setCategoryModal(null)}><form onSubmit={saveCategory} className="admin-form"><div className="form-grid"><Field label="Title" required value={categoryForm.title} onChange={(value) => setCategoryForm({ ...categoryForm, title: value, slug: categoryModal?.id ? categoryForm.slug : slugify(value) })} /><Field label="Slug" required value={categoryForm.slug} onChange={(value) => setCategoryForm({ ...categoryForm, slug: value })} /><Field label="Description (optional)" value={categoryForm.description} onChange={(value) => setCategoryForm({ ...categoryForm, description: value })} /><Field label="Icon class (optional)" value={categoryForm.icon} onChange={(value) => setCategoryForm({ ...categoryForm, icon: value })} /><Field label="Accent color (optional)" value={categoryForm.accent} onChange={(value) => setCategoryForm({ ...categoryForm, accent: value })} /></div><ModalActions saving={saving} /></form></Modal>}
     {listingModal && <Modal title="Edit listing" onClose={() => setListingModal(null)}><form onSubmit={saveListing} className="admin-form"><div className="form-grid"><Field label="Property title" required value={listingModal.title} onChange={(value) => setListingModal({ ...listingModal, title: value })} /><Field label="Sale price" type="number" value={String(listingModal.salePrice ?? '')} onChange={(value) => setListingModal({ ...listingModal, salePrice: value })} /><label>Status<select value={listingModal.status ?? 'ACTIVE'} onChange={(event) => setListingModal({ ...listingModal, status: event.target.value })}><option>ACTIVE</option><option>PENDING</option><option>SOLD</option><option>ARCHIVED</option></select></label></div><ModalActions saving={saving} /></form></Modal>}
     {viewLoading && <div className="modal-backdrop" role="status"><div className="admin-modal"><Loading /></div></div>}
-    {viewListing && <ListingViewModal listing={viewListing} onClose={() => setViewListing(null)} />}
+    {viewListing && <ListingViewModal listing={viewListing} onClose={() => { setViewListing(null); setListingToView(null) }} />}
     {addListingOpen && <Modal title="Add quick listing" onClose={() => setAddListingOpen(false)}><form onSubmit={addListing} className="admin-form"><div className="form-grid"><label>Property type<select value={newListing.kind} onChange={(event) => setNewListing({ ...newListing, kind: event.target.value as ListingKind })}>{(Object.keys(labels) as ListingKind[]).map((kind) => <option key={kind} value={kind}>{labels[kind]}</option>)}</select></label>{newListing.kind === 'commercial-area' && <label>Listing type<select value={newListing.listingType} onChange={(event) => setNewListing({ ...newListing, listingType: event.target.value })}><option>SALE</option><option>RENT</option></select></label>}<Field label="Property title" required value={newListing.title} onChange={(value) => setNewListing({ ...newListing, title: value })} /><Field label="Sale price" type="number" required value={newListing.salePrice} onChange={(value) => setNewListing({ ...newListing, salePrice: value })} /></div><ModalActions saving={saving} label="Add listing" /></form></Modal>}
   </div>
 }

@@ -1,4 +1,5 @@
 import { getUploadUrl, houseForSaleApi, uploadApi } from "../../services/api";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import type { LocationData, LookupItem } from "../../types";
@@ -32,21 +33,24 @@ export default function LocationImagesStep({
   // Seeded from the bundled Tanzania regions/districts/wards dataset so the
   // dropdowns work immediately; replaced with live API data (real DB ids)
   // once the backend has locations seeded.
-  const [regions, setRegions] = useState<LookupItem[]>(staticRegions);
-  const [districts, setDistricts] = useState<(LookupItem & { regionId: string })[]>(staticDistricts);
-  const [wards, setWards] = useState<(LookupItem & { districtId: string })[]>(staticWards);
-
-  useEffect(() => {
-    Promise.all([
-      houseForSaleApi.getRegions(),
-      houseForSaleApi.getDistricts(),
-      houseForSaleApi.getWards(),
-    ]).then(([nextRegions, nextDistricts, nextWards]) => {
-      if (Array.isArray(nextRegions) && nextRegions.length) setRegions(nextRegions);
-      if (Array.isArray(nextDistricts) && nextDistricts.length) setDistricts(nextDistricts);
-      if (Array.isArray(nextWards) && nextWards.length) setWards(nextWards);
-    }).catch((error) => console.error("Location API unavailable, using bundled Tanzania location data instead:", error));
-  }, []);
+  const { data: locationData } = useQuery<{
+    regions: LookupItem[]
+    districts: (LookupItem & { regionId: string })[]
+    wards: (LookupItem & { districtId: string })[]
+  }>({
+    queryKey: ['locations'],
+    queryFn: async () => {
+      const [regions, districts, wards] = await Promise.all([
+        houseForSaleApi.getRegions(),
+        houseForSaleApi.getDistricts(),
+        houseForSaleApi.getWards(),
+      ])
+      return { regions, districts, wards }
+    },
+  })
+  const regions = locationData?.regions?.length ? locationData.regions : staticRegions
+  const districts = locationData?.districts?.length ? locationData.districts : staticDistricts
+  const wards = locationData?.wards?.length ? locationData.wards : staticWards
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;

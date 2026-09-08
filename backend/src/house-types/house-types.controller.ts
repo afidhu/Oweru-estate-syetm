@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors } from '@nestjs/common';
 import { HouseTypesService } from './house-types.service';
 import { CreateHouseTypeDto } from './dto/create-house-type.dto';
 import { UpdateHouseTypeDto } from './dto/update-house-type.dto';
@@ -12,6 +13,9 @@ export class HouseTypesController {
     return this.houseTypesService.create(createHouseTypeDto);
   }
 
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('house-types')
+  @CacheTTL(300)
   @Get()
   findAll() {
     return this.houseTypesService.findAll();

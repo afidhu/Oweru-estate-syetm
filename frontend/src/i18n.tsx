@@ -146,7 +146,7 @@ const translations: Record<string, string> = {
   'Fire Safety System': 'Mfumo wa Usalama wa Moto',
   'Conference Room': 'Ukumbi',
   'Loading Bay': 'Eneo la Kupakua Mizigo',
-  'Corner Plot': 'Kona ya Viwanja',
+  'Corner Plot': 'Kiwanja cha Kona',
   'Office Building': 'Jengo la Ofisi',
   'Retail Shop': 'Duka la Rejareja',
   'Showroom': 'showroom',
@@ -170,6 +170,10 @@ const translations: Record<string, string> = {
   'feet': 'feet',
 }
 
+function capitalizeFirstLetter(text: string) {
+  return text.replace(/^(\s*)(\S)/u, (_, whitespace: string, firstLetter: string) => `${whitespace}${firstLetter.toLocaleUpperCase()}`)
+}
+
 interface LanguageContextValue {
   language: Language
   setLanguage: (language: Language) => void
@@ -180,7 +184,7 @@ const LanguageContext = createContext<LanguageContextValue | null>(null)
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('sw')
-  const tr = (text: string) => language === 'sw' ? (translations[text] || text) : text
+  const tr = (text: string) => capitalizeFirstLetter(language === 'sw' ? (translations[text] || text) : text)
   return <LanguageContext.Provider value={{ language, setLanguage, tr }}>{children}</LanguageContext.Provider>
 }
 

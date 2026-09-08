@@ -197,8 +197,7 @@ export default function HomePage() {
                 <div className="d-flex justify-content-between mt-4 pt-3 border-top">
                   <button
                     className="btn btn-outline-secondary"
-                    disabled={step === 0}
-                    onClick={() => setStep((s) => Math.max(0, s - 1))}
+                    onClick={() => step === 0 ? reset() : setStep((s) => s - 1)}
                   >
                     <i className="bi bi-arrow-left me-1" /> {tr('Back')}
                   </button>

@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors } from '@nestjs/common';
 import { CommercialAreaPropertyTypeService } from './commercial-area-property-type.service';
 import { CreateCommercialAreaPropertyTypeDto } from './dto/create-commercial-area-property-type.dto';
 import { UpdateCommercialAreaPropertyTypeDto } from './dto/update-commercial-area-property-type.dto';
@@ -12,6 +13,9 @@ export class CommercialAreaPropertyTypeController {
     return this.commercialAreaPropertyTypeService.create(createCommercialAreaPropertyTypeDto);
   }
 
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('commercial-area-property-types')
+  @CacheTTL(300)
   @Get()
   findAll() {
     return this.commercialAreaPropertyTypeService.findAll();
