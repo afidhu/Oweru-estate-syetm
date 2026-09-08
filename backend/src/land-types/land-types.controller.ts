@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors } from '@nestjs/common';
 import { LandTypesService } from './land-types.service';
 import { CreateLandTypeDto } from './dto/create-land-type.dto';
 import { UpdateLandTypeDto } from './dto/update-land-type.dto';
@@ -12,6 +13,9 @@ export class LandTypesController {
     return this.landTypesService.create(createLandTypeDto);
   }
 
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('land-types')
+  @CacheTTL(300)
   @Get()
   findAll() {
     return this.landTypesService.findAll();

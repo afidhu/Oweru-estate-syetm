@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors } from '@nestjs/common';
 import { WardsService } from './wards.service';
 import { CreateWardDto } from './dto/create-ward.dto';
 import { UpdateWardDto } from './dto/update-ward.dto';
@@ -12,6 +13,9 @@ export class WardsController {
     return this.wardsService.create(createWardDto);
   }
 
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('wards')
+  @CacheTTL(300)
   @Get()
   findAll() {
     return this.wardsService.findAll();

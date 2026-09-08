@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors } from '@nestjs/common';
 import { PropertyCategoriesService } from './property-categories.service';
 import { CreatePropertyCategoryDto } from './dto/create-property-category.dto';
 import { UpdatePropertyCategoryDto } from './dto/update-property-category.dto';
@@ -12,6 +13,9 @@ export class PropertyCategoriesController {
     return this.propertyCategoriesService.create(createPropertyCategoryDto);
   }
 
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('property-categories')
+  @CacheTTL(300)
   @Get()
   findAll() {
     return this.propertyCategoriesService.findAll();

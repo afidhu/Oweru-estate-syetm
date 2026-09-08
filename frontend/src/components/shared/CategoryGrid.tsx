@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { houseForSaleApi } from '../../services/api'
 import type { CategoryId, PropertyCategoryRecord } from '../../types'
 import { useLanguage } from '../../i18n'
@@ -9,14 +9,12 @@ interface CategoryGridProps {
 
 export default function CategoryGrid({ onSelect }: CategoryGridProps) {
   const { tr } = useLanguage()
-  const [categories, setCategories] = useState<PropertyCategoryRecord[]>([])
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    houseForSaleApi.getPropertyCategories()
-      .then((items: PropertyCategoryRecord[]) => setCategories(items.filter((item) => /house|land|commercial/i.test(`${item.title} ${item.slug}`))))
-      .catch(() => setError(tr('Unable to load property categories.')))
-  }, [])
+  const { data: categories = [], isError } = useQuery<PropertyCategoryRecord[]>({
+    queryKey: ['property-categories'],
+    queryFn: houseForSaleApi.getPropertyCategories,
+    select: (items) => items.filter((item) => /house|land|commercial/i.test(`${item.title} ${item.slug}`)),
+  })
+  const error = isError ? tr('Unable to load property categories.') : ''
 
   return (
     <div className="oweru-panel">

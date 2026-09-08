@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
+const cache_manager_1 = require("@nestjs/cache-manager");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const auth_module_1 = require("./auth/auth.module");
@@ -41,7 +42,10 @@ let AppModule = class AppModule {
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, auth_module_1.AuthModule, users_module_1.UsersModule, property_categories_module_1.PropertyCategoriesModule, house_types_module_1.HouseTypesModule, land_types_module_1.LandTypesModule, regions_module_1.RegionsModule, districts_module_1.DistrictsModule, wards_module_1.WardsModule, brokers_module_1.BrokersModule, owners_module_1.OwnersModule, commissions_module_1.CommissionsModule, house_for_sale_module_1.HouseForSaleModule, house_for_sale_feature_module_1.HouseForSaleFeatureModule, house_for_sale_image_module_1.HouseForSaleImageModule, house_for_sale_document_module_1.HouseForSaleDocumentModule, land_for_sale_module_1.LandForSaleModule, land_for_sale_feature_module_1.LandForSaleFeatureModule, land_for_sale_image_module_1.LandForSaleImageModule, land_for_sale_document_module_1.LandForSaleDocumentModule, commercial_area_module_1.CommercialAreaModule, commercial_area_property_type_module_1.CommercialAreaPropertyTypeModule, commercial_area_image_module_1.CommercialAreaImageModule, commercial_area_document_module_1.CommercialAreaDocumentModule, uploads_module_1.UploadsModule,],
+        imports: [cache_manager_1.CacheModule.register({
+                isGlobal: true,
+                ttl: 300,
+            }), prisma_module_1.PrismaModule, auth_module_1.AuthModule, users_module_1.UsersModule, property_categories_module_1.PropertyCategoriesModule, house_types_module_1.HouseTypesModule, land_types_module_1.LandTypesModule, regions_module_1.RegionsModule, districts_module_1.DistrictsModule, wards_module_1.WardsModule, brokers_module_1.BrokersModule, owners_module_1.OwnersModule, commissions_module_1.CommissionsModule, house_for_sale_module_1.HouseForSaleModule, house_for_sale_feature_module_1.HouseForSaleFeatureModule, house_for_sale_image_module_1.HouseForSaleImageModule, house_for_sale_document_module_1.HouseForSaleDocumentModule, land_for_sale_module_1.LandForSaleModule, land_for_sale_feature_module_1.LandForSaleFeatureModule, land_for_sale_image_module_1.LandForSaleImageModule, land_for_sale_document_module_1.LandForSaleDocumentModule, commercial_area_module_1.CommercialAreaModule, commercial_area_property_type_module_1.CommercialAreaPropertyTypeModule, commercial_area_image_module_1.CommercialAreaImageModule, commercial_area_document_module_1.CommercialAreaDocumentModule, uploads_module_1.UploadsModule,],
         controllers: [app_controller_1.AppController],
         providers: [prisma_service_1.PrismaService, app_service_1.AppService],
     })

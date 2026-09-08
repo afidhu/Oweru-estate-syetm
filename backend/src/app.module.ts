@@ -1,5 +1,6 @@
 
 import { Module } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -31,8 +32,12 @@ import { CommercialAreaDocumentModule } from './commercial-area-document/commerc
 import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
-  imports: [ PrismaModule,AuthModule, UsersModule, PropertyCategoriesModule, HouseTypesModule, LandTypesModule, RegionsModule, DistrictsModule, WardsModule, BrokersModule, OwnersModule, CommissionsModule, HouseForSaleModule, HouseForSaleFeatureModule, HouseForSaleImageModule, HouseForSaleDocumentModule, LandForSaleModule, LandForSaleFeatureModule, LandForSaleImageModule, LandForSaleDocumentModule, CommercialAreaModule, CommercialAreaPropertyTypeModule, CommercialAreaImageModule, CommercialAreaDocumentModule, UploadsModule,],
+  imports: [CacheModule.register({
+      isGlobal: true, // 🌍 This makes the cache layer available across all controllers
+      ttl: 300,        // ⏱️ Cache data for 5 minutes (in seconds)
+    }), PrismaModule,AuthModule, UsersModule, PropertyCategoriesModule, HouseTypesModule, LandTypesModule, RegionsModule, DistrictsModule, WardsModule, BrokersModule, OwnersModule, CommissionsModule, HouseForSaleModule, HouseForSaleFeatureModule, HouseForSaleImageModule, HouseForSaleDocumentModule, LandForSaleModule, LandForSaleFeatureModule, LandForSaleImageModule, LandForSaleDocumentModule, CommercialAreaModule, CommercialAreaPropertyTypeModule, CommercialAreaImageModule, CommercialAreaDocumentModule, UploadsModule,],
   controllers: [AppController],
   providers: [ PrismaService,AppService],
+  
 })
 export class AppModule {}

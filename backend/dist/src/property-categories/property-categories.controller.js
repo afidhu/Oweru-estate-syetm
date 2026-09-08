@@ -13,6 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PropertyCategoriesController = void 0;
+const cache_manager_1 = require("@nestjs/cache-manager");
 const common_1 = require("@nestjs/common");
 const property_categories_service_1 = require("./property-categories.service");
 const create_property_category_dto_1 = require("./dto/create-property-category.dto");
@@ -47,6 +48,9 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], PropertyCategoriesController.prototype, "create", null);
 __decorate([
+    (0, common_1.UseInterceptors)(cache_manager_1.CacheInterceptor),
+    (0, cache_manager_1.CacheKey)('property-categories'),
+    (0, cache_manager_1.CacheTTL)(300),
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
