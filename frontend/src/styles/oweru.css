@@ -199,8 +199,14 @@ button, input, select, textarea { max-width: 100%; }
 }
 
 /* File upload rows (images / video / documents) — keep tidy on every screen */
-.oweru-wizard-body .list-group-item { min-width: 0; }
-.oweru-wizard-body .list-group-item > .text-truncate { flex: 1 1 auto; min-width: 0; }
+.oweru-wizard, .oweru-wizard-body, .oweru-wizard-body .list-group { max-width: 100%; min-width: 0; }
+.oweru-wizard-body .list-group-item { display: flex; align-items: center; gap: .5rem; overflow: hidden; }
+.oweru-wizard-body .list-group-item > span:first-child {
+  flex: 1 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.oweru-wizard-body .list-group-item > span:first-child i { flex: 0 0 auto; }
+.oweru-wizard-body .list-group-item > span:last-child { flex: 0 0 auto; }
 .oweru-wizard-body .list-group-item .btn-sm { flex: 0 0 auto; }
 @media (max-width: 720px) {
   .oweru-wizard-body h5 { font-size: 1.08rem; }
@@ -210,6 +216,14 @@ button, input, select, textarea { max-width: 100%; }
   .oweru-wizard-body .list-group-item .btn-sm { --bs-btn-padding-x: .45rem; --bs-btn-padding-y: .2rem; --bs-btn-font-size: .8rem; }
   .oweru-wizard-body .form-label { font-size: .88rem; }
   .oweru-video-preview { max-width: 100%; }
+  /* Keep Back / Continue in view without scrolling to the bottom */
+  .oweru-wizard-actions {
+    position: sticky; bottom: 0; z-index: 5;
+    margin-top: 1.25rem !important; padding-bottom: .75rem;
+    background: #fff;
+    box-shadow: 0 -10px 16px -8px rgba(16, 26, 53, .12);
+  }
+  .oweru-wizard-actions .btn { padding-top: .6rem; padding-bottom: .6rem; }
 }
 
 @media (min-width: 721px) {

@@ -239,6 +239,35 @@ export function BrokerOwnerStep({ category, details, onChange, showErrors = fals
   )
 }
 
+export function FeaturesStep({ category, details, onChange }: DetailsStepProps) {
+  const { tr } = useLanguage()
+  const { data: propertyTypes = [] } = useQuery<{ id: string; name: string }[]>({ queryKey: ['commercial-property-types'], queryFn: lookupApi.getPropertyTypes })
+  const set = (patch: Partial<DetailsData>) => onChange({ ...details, ...patch } as DetailsData)
+  const features = details.features
+
+  let options: string[]
+  if (category === 'house-sale') options = HOUSE_FEATURES
+  else if (category === 'land-sale') options = LAND_FEATURES
+  else {
+    const selName = propertyTypes.find((p) => p.id === (details as CommercialDetails).commercialType)?.name
+    options = selName && COMMERCIAL_LAND_TYPES.includes(selName) ? COMMERCIAL_LAND_FEATURES : COMMERCIAL_FEATURES
+  }
+
+  return (
+    <div>
+      <h5 className="mb-1">{tr('Features & amenities')}</h5>
+      <p className="text-muted mb-4">{tr('Select the features this property has.')}</p>
+      <FeatureChips
+        options={options}
+        selected={features}
+        onToggle={(v) => set({ features: features.includes(v) ? features.filter((f) => f !== v) : [...features, v] })}
+        onAddCustom={(v) => set({ features: features.includes(v) ? features : [...features, v] })}
+        onRemoveCustom={(v) => set({ features: features.filter((f) => f !== v) })}
+      />
+    </div>
+  )
+}
+
 export default function DetailsStep({ category, details, onChange, showErrors = false }: DetailsStepProps) {
   const { tr } = useLanguage()
   const [touched, setTouched] = useState<Record<string, boolean>>({})
@@ -340,19 +369,6 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
           </div>
         </div>
 
-        <label className="form-label fw-semibold d-block">{tr('Features & amenities')}</label>
-        <FeatureChips
-          options={HOUSE_FEATURES}
-          selected={d.features}
-          onToggle={(v) => set({
-            features: d.features.includes(v)
-              ? d.features.filter((f) => f !== v)
-              : [...d.features, v],
-          })}
-          onAddCustom={(v) => set({ features: d.features.includes(v) ? d.features : [...d.features, v] })}
-          onRemoveCustom={(v) => set({ features: d.features.filter((f) => f !== v) })}
-        />
-
       </div>
     )
   }
@@ -424,19 +440,6 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
         </div>
         <ErrorText show={started && !d.landType} message={tr('Please select a land type')} />
 
-        <label className="form-label fw-semibold d-block">{tr('Features & amenities')}</label>
-        <FeatureChips
-          options={LAND_FEATURES}
-          selected={d.features}
-          onToggle={(v) => set({
-            features: d.features.includes(v)
-              ? d.features.filter((f) => f !== v)
-              : [...d.features, v],
-          })}
-          onAddCustom={(v) => set({ features: d.features.includes(v) ? d.features : [...d.features, v] })}
-          onRemoveCustom={(v) => set({ features: d.features.filter((f) => f !== v) })}
-        />
-
       </div>
     )
   }
@@ -496,9 +499,6 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
       {(() => {
         const buildingTypes = propertyTypes.filter((p) => COMMERCIAL_BUILDING_TYPES.includes(p.name))
         const landTypes = propertyTypes.filter((p) => COMMERCIAL_LAND_TYPES.includes(p.name))
-        const selectedName = propertyTypes.find((p) => p.id === d.commercialType)?.name
-        const selectedKind: 'building' | 'land' = selectedName && COMMERCIAL_LAND_TYPES.includes(selectedName) ? 'land' : 'building'
-        const featureOptions = selectedKind === 'land' ? COMMERCIAL_LAND_FEATURES : COMMERCIAL_FEATURES
         const typeGroup = (label: string, items: typeof propertyTypes) => items.length > 0 && (
           <>
             <div className="mb-2 text-muted small fw-semibold text-uppercase">{tr(label)}</div>
@@ -521,19 +521,6 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
             {typeGroup('Commercial Building', buildingTypes)}
             {typeGroup('Commercial Land', landTypes)}
             <ErrorText show={started && !d.commercialType} message={tr('Please select a property type')} />
-
-            <label className="form-label fw-semibold d-block">{tr('Features & amenities')}</label>
-            <FeatureChips
-              options={featureOptions}
-              selected={d.features}
-              onToggle={(v) => set({
-                features: d.features.includes(v)
-                  ? d.features.filter((f) => f !== v)
-                  : [...d.features, v],
-              })}
-              onAddCustom={(v) => set({ features: d.features.includes(v) ? d.features : [...d.features, v] })}
-              onRemoveCustom={(v) => set({ features: d.features.filter((f) => f !== v) })}
-            />
           </>
         )
       })()}

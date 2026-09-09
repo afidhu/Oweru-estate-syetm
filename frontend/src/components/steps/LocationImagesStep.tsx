@@ -35,6 +35,7 @@ export default function LocationImagesStep({
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoLocalPreview, setVideoLocalPreview] = useState("");
   const [videoError, setVideoError] = useState("");
+  const [locationPermissionMessage, setLocationPermissionMessage] = useState("");
   const [preview, setPreview] = useState<{ type: "image" | "video"; src: string } | null>(null);
 
   // Seeded from the bundled Tanzania regions/districts/wards dataset so the
@@ -164,19 +165,33 @@ export default function LocationImagesStep({
 
   const handleMyLocation = () => {
     if (!navigator.geolocation) {
-      alert(tr("Geolocation is not supported by your browser"));
+      const message = tr("Geolocation is not supported by your browser");
+      setLocationPermissionMessage(message);
+      alert(message);
       return;
     }
+
+    setLocationPermissionMessage("");
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         set({ lat: latitude, lng: longitude });
+        setLocationPermissionMessage("");
       },
       (error) => {
         console.error("Geolocation error:", error);
-        alert(tr("Unable to retrieve your location"));
+        const message =
+          error.code === error.PERMISSION_DENIED
+            ? tr("Location access is blocked. Enable location in your browser settings, refresh the page, and try again. You can also click the map to pick a location manually.")
+            : error.code === error.POSITION_UNAVAILABLE
+              ? tr("Your location is unavailable right now. Move to an open area or pick the spot on the map.")
+              : tr("Getting your location timed out. Please try again or pick the spot on the map.");
+
+        setLocationPermissionMessage(message);
+        alert(message);
       },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   };
 

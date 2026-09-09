@@ -96,4 +96,4 @@ export interface LookupItem {
   name: string
 }
 
-export const STEP_LABELS = ['Details', 'Broker & Owner', 'Location', 'Images', 'Review'] as const
+export const STEP_LABELS = ['Details', 'Features', 'Broker & Owner', 'Location', 'Images', 'Review'] as const
