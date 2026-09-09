@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
@@ -46,6 +46,8 @@ export default function Dashboard() {
   const [listingModal, setListingModal] = useState<Listing | null>(null)
   const [viewListing, setViewListing] = useState<ListingDetail | null>(null)
   const [listingToView, setListingToView] = useState<Listing | null>(null)
+  const [listingForm, setListingForm] = useState<Record<string, string>>({})
+  const [listingFormId, setListingFormId] = useState<string | null>(null)
   const [addListingOpen, setAddListingOpen] = useState(false)
   const [newListing, setNewListing] = useState({ kind: 'house-for-sale' as ListingKind, title: '', salePrice: '', listingType: 'SALE' })
   const queryClient = useQueryClient()
@@ -78,6 +80,12 @@ export default function Dashboard() {
   useEffect(() => {
     if (viewListingData) setViewListing(viewListingData)
   }, [viewListingData])
+  useEffect(() => {
+    if (listingModal && viewListing && viewListing.id === listingModal.id && listingFormId !== viewListing.id) {
+      setListingForm(buildListingForm(viewListing))
+      setListingFormId(viewListing.id)
+    }
+  }, [listingModal, viewListing, listingFormId])
   const listings = dashboardData?.listings ?? []
   const brokers = dashboardData?.brokers ?? []
   const owners = dashboardData?.owners ?? []
@@ -118,12 +126,12 @@ export default function Dashboard() {
   }
   async function savePerson(event: FormEvent) {
     event.preventDefault(); if (!personModal || !personForm.name.trim() || !personForm.phone.trim()) return; setSaving(true)
-    try { const data = { ...personForm, email: personForm.email || undefined, nid: personForm.nid || undefined, tin: personForm.tin || undefined }; personModal.id ? await api.patch(`/${personModal.kind}/${personModal.id}`, data) : await api.post(`/${personModal.kind}`, data); setPersonModal(null); await loadData(); flash('Contact saved successfully.') }
+    try { const data = { ...personForm, email: personForm.email || undefined, nid: personForm.nid || undefined, tin: personForm.tin || undefined }; personModal.id ? await api.patch(`/${personModal.kind}/${personModal.id}`, data) : await api.post(`/${personModal.kind}`, data); setPersonModal(null); flash('Contact saved successfully.'); void loadData() }
     catch (requestError) { console.error(requestError); setError('The contact could not be saved.') } finally { setSaving(false) }
   }
   async function deletePerson(kind: PersonKind, id: string) {
     if (!window.confirm('Delete this contact?')) return
-    try { await api.delete(`/${kind}/${id}`); await loadData(); flash('Contact deleted.') } catch (requestError) { console.error(requestError); setError('The contact could not be deleted.') }
+    try { await api.delete(`/${kind}/${id}`); flash('Contact deleted.'); void loadData() } catch (requestError) { console.error(requestError); setError('The contact could not be deleted.') }
   }
   function openCategory(category?: PropertyCategoryRecord) {
     setCategoryModal({ id: category?.id })
@@ -131,46 +139,87 @@ export default function Dashboard() {
   }
   async function saveCategory(event: FormEvent) {
     event.preventDefault(); if (!categoryModal || !categoryForm.title.trim() || !categoryForm.slug.trim()) return; setSaving(true)
-    try { const data = { ...categoryForm, description: categoryForm.description || undefined, icon: categoryForm.icon || undefined, accent: categoryForm.accent || undefined }; categoryModal.id ? await api.patch(`/property-categories/${categoryModal.id}`, data) : await api.post('/property-categories', data); setCategoryModal(null); await loadData(); flash('Category saved successfully.') }
+    try { const data = { ...categoryForm, description: categoryForm.description || undefined, icon: categoryForm.icon || undefined, accent: categoryForm.accent || undefined }; categoryModal.id ? await api.patch(`/property-categories/${categoryModal.id}`, data) : await api.post('/property-categories', data); setCategoryModal(null); flash('Category saved successfully.'); void loadData() }
     catch (requestError) { console.error(requestError); setError('The category could not be saved.') } finally { setSaving(false) }
   }
   async function deleteCategory(id: string) {
     if (!window.confirm('Delete this category?')) return
-    try { await api.delete(`/property-categories/${id}`); await loadData(); flash('Category deleted.') } catch (requestError) { console.error(requestError); setError('The category could not be deleted.') }
+    try { await api.delete(`/property-categories/${id}`); flash('Category deleted.'); void loadData() } catch (requestError) { console.error(requestError); setError('The category could not be deleted.') }
   }
   async function saveListing(event: FormEvent) {
-    event.preventDefault(); if (!listingModal?.title.trim()) return; setSaving(true)
-    try { await api.patch(`${endpoint(listingModal.category)}/${listingModal.id}`, { title: listingModal.title, salePrice: listingModal.salePrice === '' ? undefined : Number(listingModal.salePrice), status: listingModal.status }); setListingModal(null); await loadData(); flash('Listing updated successfully.') }
+    event.preventDefault(); if (!listingModal || !(listingForm.title ?? '').trim()) return; setSaving(true)
+    const num = (v?: string) => { const t = (v ?? '').trim(); return t === '' ? undefined : Number(t) }
+    const text = (v?: string) => { const t = (v ?? '').trim(); return t === '' ? undefined : t }
+    const payload: Record<string, unknown> = {
+      title: listingForm.title,
+      salePrice: num(listingForm.salePrice),
+      size: num(listingForm.size),
+      sizeUnit: text(listingForm.sizeUnit),
+      status: listingForm.status,
+      description: text(listingForm.description),
+      exactLocation: text(listingForm.exactLocation),
+      latitude: num(listingForm.latitude),
+      longitude: num(listingForm.longitude),
+    }
+    if (listingModal.category === 'house-for-sale') {
+      payload.bedrooms = num(listingForm.bedrooms)
+      payload.bathrooms = num(listingForm.bathrooms)
+    }
+    try { await api.patch(`${endpoint(listingModal.category)}/${listingModal.id}`, payload); closeListingEdit(); flash('Listing updated successfully.'); void loadData() }
     catch (requestError) { console.error(requestError); setError('The listing could not be updated.') } finally { setSaving(false) }
   }
   async function deleteListing(listing: Listing) {
     if (!window.confirm(`Delete ${listing.title}?`)) return
-    try { await api.delete(`${endpoint(listing.category)}/${listing.id}`); await loadData(); flash('Listing deleted.') } catch (requestError) { console.error(requestError); setError('The listing could not be deleted.') }
+    try { await api.delete(`${endpoint(listing.category)}/${listing.id}`); flash('Listing deleted.'); void loadData() } catch (requestError) { console.error(requestError); setError('The listing could not be deleted.') }
   }
   async function viewListingDetails(listing: Listing) {
     setViewListing(null)
     setListingToView(listing)
   }
+  function openListingEdit(listing: Listing) {
+    setListingModal(listing)
+    setViewListing(null)
+    setListingToView(listing)
+  }
+  function closeListingEdit() {
+    setListingModal(null)
+    setViewListing(null)
+    setListingToView(null)
+    setListingForm({})
+    setListingFormId(null)
+  }
   async function addListing(event: FormEvent) {
     event.preventDefault(); if (!newListing.title.trim() || !newListing.salePrice) return; setSaving(true)
-    try { const data = newListing.kind === 'commercial-area' ? { title: newListing.title, salePrice: Number(newListing.salePrice), listingType: newListing.listingType } : { title: newListing.title, salePrice: Number(newListing.salePrice) }; await api.post(endpoint(newListing.kind), data); setAddListingOpen(false); setNewListing({ ...newListing, title: '', salePrice: '' }); await loadData(); flash('Listing added successfully.') }
+    try { const data = newListing.kind === 'commercial-area' ? { title: newListing.title, salePrice: Number(newListing.salePrice), listingType: newListing.listingType } : { title: newListing.title, salePrice: Number(newListing.salePrice) }; await api.post(endpoint(newListing.kind), data); setAddListingOpen(false); setNewListing({ ...newListing, title: '', salePrice: '' }); flash('Listing added successfully.'); void loadData() }
     catch (requestError) { console.error(requestError); setError('The listing could not be added.') } finally { setSaving(false) }
   }
 
   return <div className="admin-shell">
-    <aside className="admin-sidebar"><a className="admin-brand" href="/"><img src="/assets/logo.jpeg" alt="oweru estate" /><span className="admin-brand-word">Register <span>Estate</span></span></a><div className="admin-sidebar-label">Workspace</div><nav className="admin-nav">{([['overview', 'grid-1x2', 'Overview'], ['listings', 'buildings', 'Listings'], ['people', 'people', 'People'], ['categories', 'tags', 'Categories']] as const).map(([value, icon, label]) => <button key={value} className={section === value ? 'active' : ''} onClick={() => setSection(value)}><i className={`bi bi-${icon}`} /> {label}{value === 'listings' && <span className="admin-nav-count">{listings.length}</span>}{value === 'categories' && <span className="admin-nav-count">{categories.length}</span>}</button>)}</nav><div className="admin-sidebar-bottom"><div className="admin-user-avatar">{avatarLabel}</div><div className="admin-user-info"><strong>{roleLabel}</strong><small>{authUser.username || 'Estate operations'}</small></div><button className="admin-logout" type="button" title="Log out" aria-label="Log out" onClick={logout}><i className="bi bi-box-arrow-right" /></button></div></aside>
+    <aside className="admin-sidebar"><a className="admin-brand" href="/"><img src="/assets/logo.jpeg" alt="oweru estate" /><span className="admin-brand-word">Register <span>Estate</span></span></a><div className="admin-sidebar-label">Workspace</div><nav className="admin-nav">{([['overview', 'grid-1x2', 'Overview'], ['listings', 'buildings', 'Listings'], ['people', 'people', 'People'], ['categories', 'tags', 'Categories']] as const).filter(([value]) => !(authUser.role === 'MARKETER' && value === 'categories')).map(([value, icon, label]) => <button key={value} className={section === value ? 'active' : ''} onClick={() => setSection(value)}><i className={`bi bi-${icon}`} /> {label}{value === 'listings' && <span className="admin-nav-count">{listings.length}</span>}{value === 'categories' && <span className="admin-nav-count">{categories.length}</span>}</button>)}</nav><div className="admin-sidebar-bottom"><div className="admin-user-avatar">{avatarLabel}</div><div className="admin-user-info"><strong>{roleLabel}</strong><small>{authUser.username || 'Estate operations'}</small></div><button className="admin-logout" type="button" title="Log out" aria-label="Log out" onClick={logout}><i className="bi bi-box-arrow-right" /></button></div></aside>
     <main className="admin-main"><header className="admin-topbar"><div><span className="admin-kicker">Operations center</span><h1>{section === 'overview' ? `${greeting}, ${roleLabel}` : section === 'listings' ? 'Property listings' : section === 'people' ? 'People directory' : 'Property categories'}</h1></div><div className="admin-top-actions"><span className="admin-live"><span /> Live data</span><button className="admin-icon-button" title="Refresh data" onClick={() => void loadData()}><i className="bi bi-arrow-clockwise" /></button><button className="admin-primary" onClick={() => section === 'people' ? openPerson(personKind) : section === 'categories' ? openCategory() : setAddListingOpen(true)}><i className="bi bi-plus-lg" /> {section === 'people' ? 'Add person' : section === 'categories' ? 'Add category' : 'Add listing'}</button></div></header>
       {(error || dashboardError || viewQueryError) && <div className="admin-alert error"><i className="bi bi-exclamation-circle" /> {error || dashboardError || 'The listing details could not be loaded.'}<button onClick={() => setError('')}><i className="bi bi-x" /></button></div>}{notice && <div className="admin-alert success"><i className="bi bi-check-circle" /> {notice}</div>}
-      {section === 'overview' && <><section className="admin-metrics"><Metric icon="buildings" label="Total listings" value={listings.length} detail="Across all property types" tone="navy" /><Metric icon="check2-circle" label="Active listings" value={active} detail={`${listings.length ? Math.round(active / listings.length * 100) : 0}% of portfolio`} tone="gold" /><Metric icon="hourglass-split" label="Needs attention" value={pending} detail="Pending review" tone="coral" /><Metric icon="people" label="People managed" value={brokers.length + owners.length} detail={`${brokers.length} brokers - ${owners.length} owners`} tone="green" /></section><div className="admin-content-grid"><section className="admin-panel admin-panel-wide"><PanelHeading title="Recent listings" action="View all" onAction={() => setSection('listings')} />{loading ? <Loading /> : <ListingTable listings={listings.slice(0, 6)} onEdit={setListingModal} onDelete={deleteListing} onView={viewListingDetails} />}</section><section className="admin-panel"><PanelHeading title="Portfolio mix" /><div className="portfolio-list">{(Object.keys(labels) as ListingKind[]).map((kind) => { const count = listings.filter((item) => item.category === kind).length; return <div className="portfolio-row" key={kind}><span className={`portfolio-icon ${kind}`}><i className={`bi bi-${kind === 'house-for-sale' ? 'house' : kind === 'land-for-sale' ? 'geo' : 'shop'}`} /></span><div><strong>{labels[kind]}</strong><small>{count} listings</small></div><b>{listings.length ? Math.round(count / listings.length * 100) : 0}%</b></div> })}</div><div className="admin-mini-note"><i className="bi bi-shield-check" /><span><strong>All systems operational</strong><small>Last synced just now</small></span></div></section></div></>}
-      {section === 'listings' && <section className="admin-panel admin-full-panel"><div className="admin-toolbar"><Search value={query} onChange={setQuery} placeholder="Search title, owner or broker" /><select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as typeof kindFilter)}><option value="ALL">All property types</option>{(Object.keys(labels) as ListingKind[]).map((kind) => <option key={kind} value={kind}>{labels[kind]}</option>)}</select><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="ALL">All statuses</option><option>ACTIVE</option><option>PENDING</option><option>SOLD</option><option>ARCHIVED</option></select></div>{loading ? <Loading /> : <><ListingTable listings={pagedListings} onEdit={setListingModal} onDelete={deleteListing} onView={viewListingDetails} emptyMessage="No listings match your filters." /><Pager page={listingPage} pageCount={listingPageCount} total={filteredListings.length} onChange={setListingPage} /></>}</section>}
+      {section === 'overview' && <><section className="admin-metrics"><Metric icon="buildings" label="Total listings" value={listings.length} detail="Across all property types" tone="navy" /><Metric icon="check2-circle" label="Active listings" value={active} detail={`${listings.length ? Math.round(active / listings.length * 100) : 0}% of portfolio`} tone="gold" /><Metric icon="hourglass-split" label="Needs attention" value={pending} detail="Pending review" tone="coral" /><Metric icon="people" label="People managed" value={brokers.length + owners.length} detail={`${brokers.length} brokers - ${owners.length} owners`} tone="green" /></section><div className="admin-content-grid"><section className="admin-panel admin-panel-wide"><PanelHeading title="Recent listings" action="View all" onAction={() => setSection('listings')} />{loading ? <Loading /> : <ListingTable listings={listings.slice(0, 6)} onEdit={openListingEdit} onDelete={deleteListing} onView={viewListingDetails} />}</section><section className="admin-panel"><PanelHeading title="Portfolio mix" /><div className="portfolio-list">{(Object.keys(labels) as ListingKind[]).map((kind) => { const count = listings.filter((item) => item.category === kind).length; return <div className="portfolio-row" key={kind}><span className={`portfolio-icon ${kind}`}><i className={`bi bi-${kind === 'house-for-sale' ? 'house' : kind === 'land-for-sale' ? 'geo' : 'shop'}`} /></span><div><strong>{labels[kind]}</strong><small>{count} listings</small></div><b>{listings.length ? Math.round(count / listings.length * 100) : 0}%</b></div> })}</div><div className="admin-mini-note"><i className="bi bi-shield-check" /><span><strong>All systems operational</strong><small>Last synced just now</small></span></div></section></div></>}
+      {section === 'listings' && <section className="admin-panel admin-full-panel"><div className="admin-toolbar"><Search value={query} onChange={setQuery} placeholder="Search title, owner or broker" /><select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as typeof kindFilter)}><option value="ALL">All property types</option>{(Object.keys(labels) as ListingKind[]).map((kind) => <option key={kind} value={kind}>{labels[kind]}</option>)}</select><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="ALL">All statuses</option><option>ACTIVE</option><option>PENDING</option><option>SOLD</option><option>ARCHIVED</option></select></div>{loading ? <Loading /> : <><ListingTable listings={pagedListings} onEdit={openListingEdit} onDelete={deleteListing} onView={viewListingDetails} emptyMessage="No listings match your filters." /><Pager page={listingPage} pageCount={listingPageCount} total={filteredListings.length} onChange={setListingPage} /></>}</section>}
       {section === 'people' && <section className="admin-panel admin-full-panel"><div className="people-tabs"><button className={personKind === 'brokers' ? 'active' : ''} onClick={() => setPersonKind('brokers')}><i className="bi bi-briefcase" /> Brokers <b>{brokers.length}</b></button><button className={personKind === 'owners' ? 'active' : ''} onClick={() => setPersonKind('owners')}><i className="bi bi-person" /> Owners <b>{owners.length}</b></button><div className="people-search"><Search value={query} onChange={setQuery} placeholder="Search people" /></div></div><PeopleTable people={pagedPeople} kind={personKind} onEdit={openPerson} onDelete={deletePerson} /><Pager page={peoplePage} pageCount={peoplePageCount} total={filteredPeople.length} onChange={setPeoplePage} /></section>}
       {section === 'categories' && <section className="admin-panel admin-full-panel"><div className="admin-toolbar"><Search value={query} onChange={setQuery} placeholder="Search categories" /></div><CategoriesTable categories={categories.filter((category) => `${category.title} ${category.slug}`.toLowerCase().includes(query.toLowerCase()))} onEdit={openCategory} onDelete={deleteCategory} /></section>}
     </main>
     {personModal && <Modal title={`${personModal.id ? 'Edit' : 'Add'} ${personKind === 'brokers' ? 'broker' : 'owner'}`} onClose={() => setPersonModal(null)}><form onSubmit={savePerson} className="admin-form"><div className="form-grid"><Field label="Full name" required value={personForm.name} onChange={(value) => setPersonForm({ ...personForm, name: value })} /><Field label="Phone number" required value={personForm.phone} onChange={(value) => setPersonForm({ ...personForm, phone: value })} /><Field label="Email (optional)" type="email" value={personForm.email} onChange={(value) => setPersonForm({ ...personForm, email: value })} /><Field label="NIDA (optional)" value={personForm.nid} onChange={(value) => setPersonForm({ ...personForm, nid: value })} /><Field label="TIN (optional)" value={personForm.tin} onChange={(value) => setPersonForm({ ...personForm, tin: value })} /></div><ModalActions saving={saving} /></form></Modal>}
     {categoryModal && <Modal title={`${categoryModal.id ? 'Edit' : 'Add'} category`} onClose={() => setCategoryModal(null)}><form onSubmit={saveCategory} className="admin-form"><div className="form-grid"><Field label="Title" required value={categoryForm.title} onChange={(value) => setCategoryForm({ ...categoryForm, title: value, slug: categoryModal?.id ? categoryForm.slug : slugify(value) })} /><Field label="Slug" required value={categoryForm.slug} onChange={(value) => setCategoryForm({ ...categoryForm, slug: value })} /><Field label="Description (optional)" value={categoryForm.description} onChange={(value) => setCategoryForm({ ...categoryForm, description: value })} /><Field label="Icon class (optional)" value={categoryForm.icon} onChange={(value) => setCategoryForm({ ...categoryForm, icon: value })} /><Field label="Accent color (optional)" value={categoryForm.accent} onChange={(value) => setCategoryForm({ ...categoryForm, accent: value })} /></div><ModalActions saving={saving} /></form></Modal>}
-    {listingModal && <Modal title="Edit listing" onClose={() => setListingModal(null)}><form onSubmit={saveListing} className="admin-form"><div className="form-grid"><Field label="Property title" required value={listingModal.title} onChange={(value) => setListingModal({ ...listingModal, title: value })} /><Field label="Sale price" money value={String(listingModal.salePrice ?? '')} onChange={(value) => setListingModal({ ...listingModal, salePrice: value })} /><label>Status<select value={listingModal.status ?? 'ACTIVE'} onChange={(event) => setListingModal({ ...listingModal, status: event.target.value })}><option>ACTIVE</option><option>PENDING</option><option>SOLD</option><option>APPROVED</option></select></label></div><ModalActions saving={saving} /></form></Modal>}
-    {viewLoading && <div className="modal-backdrop" role="status"><div className="admin-modal"><Loading /></div></div>}
-    {viewListing && <ListingViewModal listing={viewListing} onClose={() => { setViewListing(null); setListingToView(null) }} />}
+    {listingModal && <Modal title="Edit listing" onClose={closeListingEdit}><div className="listing-edit-body">
+      {viewLoading && listingFormId !== listingModal.id ? <Loading /> : <>
+        <form onSubmit={saveListing} className="admin-form"><div className="form-grid">
+          <StatusSelect value={listingForm.status ?? 'ACTIVE'} onChange={(v) => setListingForm((s) => ({ ...s, status: v }))} />
+          {listingEditFields(listingModal.category).map((f) => f.key === 'description'
+            ? <label key={f.key} className="listing-edit-wide">{f.label}<textarea rows={3} value={listingForm[f.key] ?? ''} onChange={(e) => setListingForm((s) => ({ ...s, [f.key]: e.target.value }))} /></label>
+            : f.key === 'salePrice'
+              ? <Field key={f.key} label={f.label} money value={listingForm[f.key] ?? ''} onChange={(value) => setListingForm((s) => ({ ...s, [f.key]: value }))} />
+              : <Field key={f.key} label={f.label} type={f.type === 'number' ? 'number' : 'text'} required={f.key === 'title'} value={listingForm[f.key] ?? ''} onChange={(value) => setListingForm((s) => ({ ...s, [f.key]: value }))} />)}
+        </div><ModalActions saving={saving} /></form>
+        {viewListing && viewListing.id === listingModal.id && <ListingReadonlyDetails listing={viewListing} />}
+      </>}
+    </div></Modal>}
+    {viewLoading && !listingModal && <div className="modal-backdrop" role="status"><div className="admin-modal"><Loading /></div></div>}
+    {viewListing && !listingModal && <ListingViewModal listing={viewListing} onClose={() => { setViewListing(null); setListingToView(null) }} />}
     {addListingOpen && <Modal title="Add quick listing" onClose={() => setAddListingOpen(false)}><form onSubmit={addListing} className="admin-form"><div className="form-grid"><label>Property type<select value={newListing.kind} onChange={(event) => setNewListing({ ...newListing, kind: event.target.value as ListingKind })}>{(Object.keys(labels) as ListingKind[]).map((kind) => <option key={kind} value={kind}>{labels[kind]}</option>)}</select></label>{newListing.kind === 'commercial-area' && <label>Listing type<select value={newListing.listingType} onChange={(event) => setNewListing({ ...newListing, listingType: event.target.value })}><option>SALE</option><option>RENT</option></select></label>}<Field label="Property title" required value={newListing.title} onChange={(value) => setNewListing({ ...newListing, title: value })} /><Field label="Sale price" money required value={newListing.salePrice} onChange={(value) => setNewListing({ ...newListing, salePrice: value })} /></div><ModalActions saving={saving} label="Add listing" /></form></Modal>}
   </div>
 }
@@ -212,5 +261,64 @@ function ListingViewModal({ listing, onClose }: { listing: ListingDetail; onClos
 function prettyLabel(value: string) { return value.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase()) }
 function formatDetailValue(value: any, key?: string): string { if (key === 'createdAt' || key === 'updatedAt') { const date = new Date(value); if (!Number.isNaN(date.getTime())) return date.toLocaleString(undefined, { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) } if (value instanceof Date) return value.toLocaleString(); if (typeof value === 'object' && value !== null) return value.name || value.title || value.phone || 'Available'; if (key && /price|amount/i.test(key) && value !== null && value !== '' && !Number.isNaN(Number(value))) return Number(value).toLocaleString(); return String(value) }
 function MediaSection({ title, icon, empty, children }: { title: string; icon: string; empty: boolean; children: ReactNode }) { return <section className="listing-media-section"><h3><i className={`bi bi-${icon}`} /> {title}</h3>{empty ? <p className="listing-media-empty">No {title.toLowerCase()} attached.</p> : <div className="listing-media-grid">{children}</div>}</section> }
+const LISTING_TEXT_FIELDS: { key: string; label: string; type?: 'number' | 'text' }[] = [
+  { key: 'title', label: 'Property title' },
+  { key: 'salePrice', label: 'Sale price', type: 'number' },
+  { key: 'size', label: 'Size', type: 'number' },
+  { key: 'sizeUnit', label: 'Size unit' },
+  { key: 'bedrooms', label: 'Bedrooms', type: 'number' },
+  { key: 'bathrooms', label: 'Bathrooms', type: 'number' },
+  { key: 'exactLocation', label: 'Exact location' },
+  { key: 'latitude', label: 'Latitude', type: 'number' },
+  { key: 'longitude', label: 'Longitude', type: 'number' },
+  { key: 'description', label: 'Description' },
+]
+const LISTING_STATUSES = ['ACTIVE', 'PENDING', 'SOLD', 'APPROVED']
+function StatusSelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const onDoc = (event: MouseEvent) => { if (!ref.current?.contains(event.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [])
+  return <label>Status<div className="oweru-location-select" ref={ref}>
+    <button type="button" className="form-select oweru-location-select-trigger" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}><span>{value || 'ACTIVE'}</span></button>
+    {open && <div className="oweru-location-select-menu" role="listbox">{LISTING_STATUSES.map((option) => (
+      <button type="button" role="option" aria-selected={option === value} key={option} className={`oweru-location-option ${option === value ? 'selected' : ''}`} onClick={() => { onChange(option); setOpen(false) }}>{option}</button>
+    ))}</div>}
+  </div></label>
+}
+function listingEditFields(category?: ListingKind) {
+  return LISTING_TEXT_FIELDS.filter((f) => ['bedrooms', 'bathrooms'].includes(f.key) ? category === 'house-for-sale' : true)
+}
+function buildListingForm(d: ListingDetail): Record<string, string> {
+  const form: Record<string, string> = { status: d.status ?? 'ACTIVE' }
+  for (const f of listingEditFields(d.category)) {
+    const v = d[f.key]
+    form[f.key] = v === null || v === undefined ? '' : String(v)
+  }
+  return form
+}
+function ListingReadonlyDetails({ listing }: { listing: ListingDetail }) {
+  const relations = ['propertyCategory', 'houseType', 'landType', 'propertyType', 'region', 'district', 'ward'].filter((key) => listing[key])
+  const person = (label: string, p: any) => p && typeof p === 'object' ? <div><small>{label}</small><strong>{[p.name, p.phone].filter(Boolean).join(' · ') || 'Available'}</strong></div> : null
+  const images = Array.isArray(listing.images) ? listing.images : []
+  const documents = Array.isArray(listing.documents) ? listing.documents : []
+  const videos = Array.isArray(listing.videos) ? listing.videos : []
+  const features = Array.isArray(listing.features) ? listing.features : []
+  return <div className="listing-info-section" style={{ marginTop: 0, marginBottom: 4 }}>
+    <h3><i className="bi bi-info-circle" /> Related info (read-only)</h3>
+    <div className="listing-detail-grid">
+      {relations.map((key) => <div key={key}><small>{prettyLabel(key)}</small><strong>{formatDetailValue(listing[key], key)}</strong></div>)}
+      {person('Broker', listing.broker)}
+      {person('Owner', listing.owner)}
+    </div>
+    {features.length > 0 && <div className="listing-media-grid" style={{ marginTop: 12 }}>{features.map((f: any) => <span className="listing-feature" key={f.id || f.name || f}>{f.name || f}</span>)}</div>}
+    {images.length > 0 && <div className="listing-media-grid" style={{ marginTop: 12 }}>{images.map((img: any) => <img key={img.id || img.url} src={getUploadUrl(img.url)} alt="Property" style={{ width: 96, height: 70, objectFit: 'cover', borderRadius: 7 }} />)}</div>}
+    {videos.length > 0 && <div className="listing-media-grid" style={{ marginTop: 12 }}>{videos.map((v: any) => <video key={v.id || v.url} className="listing-video" controls preload="metadata" src={getUploadUrl(v.url)} />)}</div>}
+    {documents.length > 0 && <div className="listing-media-grid" style={{ marginTop: 12 }}>{documents.map((doc: any) => <a className="listing-document" key={doc.id || doc.url} href={getUploadUrl(doc.url)} target="_blank" rel="noreferrer"><i className="bi bi-file-earmark-text" /> {doc.name || 'Document'}</a>)}</div>}
+  </div>
+}
 function PeopleTable({ people, kind, onEdit, onDelete }: { people: Person[]; kind: PersonKind; onEdit: (kind: PersonKind, person?: Person) => void; onDelete: (kind: PersonKind, id: string) => void }) { return people.length ? <div className="table-wrap"><table className="admin-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Identity</th><th /></tr></thead><tbody>{people.map((person) => <tr key={person.id}><td><div className="person-cell"><span>{person.name.slice(0, 2).toUpperCase()}</span><strong>{person.name}</strong></div></td><td>{person.phone}</td><td>{person.email || 'Not provided'}</td><td><small>{person.nid ? `NIDA ${person.nid}` : 'No NIDA'}<br />{person.tin ? `TIN ${person.tin}` : 'No TIN'}</small></td><td><div className="row-actions"><button title="Edit" onClick={() => onEdit(kind, person)}><i className="bi bi-pencil" /></button><button title="Delete" onClick={() => onDelete(kind, person.id)}><i className="bi bi-trash3" /></button></div></td></tr>)}</tbody></table></div> : <div className="empty-state"><i className="bi bi-people" /><strong>No {kind} found</strong><span>Add a contact to start building your directory.</span></div> }
 function CategoriesTable({ categories, onEdit, onDelete }: { categories: PropertyCategoryRecord[]; onEdit: (category?: PropertyCategoryRecord) => void; onDelete: (id: string) => void }) { return categories.length ? <div className="table-wrap"><table className="admin-table"><thead><tr><th>Category</th><th>Slug</th><th>Description</th><th /></tr></thead><tbody>{categories.map((category) => <tr key={category.id}><td><div className="property-cell"><span className="property-thumb" style={{ background: `${category.accent || '#3B6FE0'}1a`, color: category.accent || '#3B6FE0' }}><i className={`bi ${category.icon || 'bi-tags'}`} /></span><strong>{category.title}</strong></div></td><td>{category.slug}</td><td><small>{category.description || 'No description'}</small></td><td><div className="row-actions"><button title="Edit" onClick={() => onEdit(category)}><i className="bi bi-pencil" /></button><button title="Delete" onClick={() => onDelete(category.id)}><i className="bi bi-trash3" /></button></div></td></tr>)}</tbody></table></div> : <div className="empty-state"><i className="bi bi-tags" /><strong>No categories found</strong><span>Add a property category to get started.</span></div> }

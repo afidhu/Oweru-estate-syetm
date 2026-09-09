@@ -8,6 +8,12 @@ interface Props {
   regions: LookupItem[]
   districts: (LookupItem & { regionId: string })[]
   wards: (LookupItem & { districtId: string })[]
+  showErrors?: boolean
+}
+
+function FieldErr({ show, message }: { show: boolean; message: string }) {
+  if (!show) return null
+  return <div className="text-danger small mt-1"><i className="bi bi-exclamation-circle me-1" />{message}</div>
 }
 
 function LocationSelect({
@@ -66,7 +72,7 @@ function LocationSelect({
   )
 }
 
-export default function LocationForm({ location, onChange, regions, districts, wards }: Props) {
+export default function LocationForm({ location, onChange, regions, districts, wards, showErrors = false }: Props) {
   const { tr } = useLanguage()
   const set = (updatedFields: Partial<LocationData>) => onChange({ ...location, ...updatedFields })
   const availableDistricts = districts.filter((item) => item.regionId === location.regionId)
@@ -76,7 +82,7 @@ export default function LocationForm({ location, onChange, regions, districts, w
     <div className="region-district-ward">
       <div className="row g-3 mb-3">
         <div className="col-md-6">
-          <label className="form-label fw-semibold">{tr('Region')}</label>
+          <label className="form-label fw-semibold">{tr('Region')} <span className="text-danger">*</span></label>
           <LocationSelect
             value={location.regionId}
             placeholder={tr('Select a region...')}
@@ -86,9 +92,10 @@ export default function LocationForm({ location, onChange, regions, districts, w
               set({ regionId, region: selected?.name || '', districtId: '', district: '', wardId: '', ward: '' })
             }}
           />
+          <FieldErr show={showErrors && !location.regionId} message={tr('Please select a region')} />
         </div>
         <div className="col-md-6">
-          <label className="form-label fw-semibold">{tr('District')}</label>
+          <label className="form-label fw-semibold">{tr('District')} <span className="text-danger">*</span></label>
           <LocationSelect
             value={location.districtId}
             placeholder={location.regionId ? tr('Select a district...') : tr('Choose a region first')}
@@ -99,11 +106,12 @@ export default function LocationForm({ location, onChange, regions, districts, w
               set({ districtId, district: selected?.name || '', wardId: '', ward: '' })
             }}
           />
+          <FieldErr show={showErrors && !location.districtId} message={tr('Please select a district')} />
         </div>
       </div>
       <div className="row g-3 mb-3">
         <div className="col-md-6">
-          <label className="form-label fw-semibold">{tr('Ward / Area')}</label>
+          <label className="form-label fw-semibold">{tr('Ward / Area')} <span className="text-danger">*</span></label>
           <LocationSelect
             value={location.wardId}
             placeholder={location.districtId ? tr('Select a ward...') : tr('Choose a district first')}
@@ -114,10 +122,12 @@ export default function LocationForm({ location, onChange, regions, districts, w
               set({ wardId, ward: selected?.name || '' })
             }}
           />
+          <FieldErr show={showErrors && !location.wardId} message={tr('Please select a ward')} />
         </div>
         <div className="col-md-6">
-          <label className="form-label fw-semibold">{tr('Exact location')}</label>
-          <input className="form-control" value={location.exactLocation} onChange={(e) => set({ exactLocation: e.target.value })} />
+          <label className="form-label fw-semibold">{tr('Exact location')} <span className="text-danger">*</span></label>
+          <input className={`form-control ${showErrors && !location.exactLocation.trim() ? 'is-invalid' : ''}`} value={location.exactLocation} onChange={(e) => set({ exactLocation: e.target.value })} />
+          <FieldErr show={showErrors && !location.exactLocation.trim()} message={tr('Exact location is required')} />
         </div>
       </div>
     </div>
