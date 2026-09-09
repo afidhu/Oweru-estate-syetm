@@ -284,7 +284,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
             <ErrorText show={err('salePrice', !d.salePrice)} message={tr('Sale price is required')} />
           </div>
           <div className="col-md-4">
-            <label className="form-label fw-semibold">{tr('Size unit')}</label>
+            <label className="form-label fw-semibold">{tr('Size unit')} <span className="text-danger">*</span></label>
             <ResponsiveSelect
               value={d.sizeUnit}
               placeholder="--"
@@ -292,6 +292,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
               getLabel={(unit) => tr(SIZE_UNIT_LABELS[unit])}
               onChange={(sizeUnit) => set({ sizeUnit })}
             />
+            <ErrorText show={started && !d.sizeUnit} message={tr('Size unit is required')} />
           </div>
         </div>
 
@@ -390,7 +391,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
             <ErrorText show={err('salePrice', !d.salePrice)} message={tr('Sale price is required')} />
           </div>
           <div className="col-md-4">
-            <label className="form-label fw-semibold">{tr('Size unit')}</label>
+            <label className="form-label fw-semibold">{tr('Size unit')} <span className="text-danger">*</span></label>
             <ResponsiveSelect
               value={d.sizeUnit}
               placeholder="--"
@@ -398,6 +399,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
               getLabel={(unit) => tr(SIZE_UNIT_LABELS[unit])}
               onChange={(sizeUnit) => set({ sizeUnit })}
             />
+            <ErrorText show={started && !d.sizeUnit} message={tr('Size unit is required')} />
           </div>
         </div>
 
@@ -473,7 +475,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
           <ErrorText show={err('salePrice', !d.salePrice)} message={tr('Sale price is required')} />
         </div>
         <div className="col-md-4">
-          <label className="form-label fw-semibold">{tr('Size unit')}</label>
+          <label className="form-label fw-semibold">{tr('Size unit')} <span className="text-danger">*</span></label>
           <ResponsiveSelect
             value={d.sizeUnit}
             placeholder="--"
@@ -481,6 +483,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
             getLabel={(unit) => tr(SIZE_UNIT_LABELS[unit])}
             onChange={(sizeUnit) => set({ sizeUnit })}
           />
+            <ErrorText show={started && !d.sizeUnit} message={tr('Size unit is required')} />
         </div>
       </div>
 

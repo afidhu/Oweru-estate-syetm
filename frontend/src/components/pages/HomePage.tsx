@@ -75,6 +75,7 @@ export default function HomePage() {
   const canContinueFromDetails = Boolean(
     details?.propertyTitle.trim()
     && details.salePrice
+    && details.sizeUnit
     && selectedType,
   )
   const canContinueFromBrokerOwner = Boolean(
