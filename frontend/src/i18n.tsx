@@ -75,6 +75,7 @@ const translations: Record<string, string> = {
   'Please fill this field': 'Tafadhali jaza sehemu hii',
   'Property title is required': 'Jina la mali linahitajika',
   'Sale price is required': 'Bei ya kuuza inahitajika',
+  'Size unit is required': 'Kipimo cha ukubwa kinahitajika',
   'Full name is required': 'Jina kamili linahitajika',
   'Phone number is required': 'Namba ya simu inahitajika',
   'Please select a house type': 'Tafadhali chagua aina ya nyumba',
