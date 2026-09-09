@@ -5,7 +5,7 @@ import { commercialAreaApi, houseForSaleApi, landForSaleApi, uploadApi } from '.
 
 import type { CategoryId, CommercialDetails, DetailsData, HouseDetails, LandDetails, LocationData } from '../../types'
 import LocationImagesStep from '../steps/LocationImagesStep';
-import DetailsStep, { BrokerOwnerStep } from '../steps/DetailsStep';
+import DetailsStep, { BrokerOwnerStep, FeaturesStep } from '../steps/DetailsStep';
 import ReviewStep from '../steps/ReviewStep';
 import CategoryGrid from '../shared/CategoryGrid';
 import Stepper from '../shared/Stepper';
@@ -110,7 +110,7 @@ export default function HomePage() {
     }
     if (!details.broker.name.trim() || !details.broker.phone.trim() || !details.owner.name.trim() || !details.owner.phone.trim()) {
       setBanner({ tone: 'warning', text: tr('Broker and owner names and phone numbers are required.') })
-      setStep(1)
+      setStep(2)
       return
     }
 
@@ -218,9 +218,12 @@ export default function HomePage() {
                   <DetailsStep category={category} details={details} onChange={setDetails} showErrors={showErrors} />
                 )}
                 {step === 1 && (
-                  <BrokerOwnerStep category={category} details={details} onChange={setDetails} showErrors={showErrors} />
+                  <FeaturesStep category={category} details={details} onChange={setDetails} />
                 )}
                 {step === 2 && (
+                  <BrokerOwnerStep category={category} details={details} onChange={setDetails} showErrors={showErrors} />
+                )}
+                {step === 3 && (
                   <LocationImagesStep
                     mode="location"
                     location={location}
@@ -230,7 +233,7 @@ export default function HomePage() {
                     showErrors={showErrors}
                   />
                 )}
-                {step === 3 && (
+                {step === 4 && (
                   <LocationImagesStep
                     mode="images"
                     location={location}
@@ -240,11 +243,11 @@ export default function HomePage() {
                     showErrors={showErrors}
                   />
                 )}
-                {step === 4 && (
+                {step === 5 && (
                   <ReviewStep category={category} details={details} location={location} />
                 )}
 
-                <div className="d-flex justify-content-between mt-4 pt-3 border-top">
+                <div className="d-flex justify-content-between mt-4 pt-3 border-top oweru-wizard-actions">
                   <button
                     className="btn btn-outline-secondary"
                     onClick={() => { setBanner(null); step === 0 ? reset() : setStep((s) => s - 1) }}
@@ -252,15 +255,16 @@ export default function HomePage() {
                     <i className="bi bi-arrow-left me-1" /> {tr('Back')}
                   </button>
 
-                  {step < 4 ? (
+                  {step < 5 ? (
                     <button
                       className="btn btn-oweru"
                       onClick={() => {
                         const ok =
                           (step === 0 && canContinueFromDetails)
-                          || (step === 1 && canContinueFromBrokerOwner)
-                          || (step === 2 && canContinueFromLocation)
-                          || (step === 3 && canContinueFromImages)
+                          || step === 1
+                          || (step === 2 && canContinueFromBrokerOwner)
+                          || (step === 3 && canContinueFromLocation)
+                          || (step === 4 && canContinueFromImages)
                         if (!ok) { setShowErrors(true); return }
                         setShowErrors(false)
                         setBanner(null)
