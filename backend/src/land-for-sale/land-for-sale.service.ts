@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { CreateLandForSaleDto } from './dto/create-land-for-sale.dto';
 import { UpdateLandForSaleDto } from './dto/update-land-for-sale.dto';
 import { PrismaService } from '../prisma.config/prisma.service';
+import { PropertyMirrorService } from '../property-mirror/property-mirror.service';
 
 @Injectable()
 export class LandForSaleService {
-  constructor(private readonly prisma:PrismaService){}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly propertyMirror: PropertyMirrorService,
+  ) {}
   create(createLandForSaleDto: CreateLandForSaleDto) {
     const { features, images, documents, videos, broker, owner,regionId,wardId,districtId,landTypeId,propertyCategoryId, brokerId, ownerId, ...landData } = createLandForSaleDto;
     return this.prisma.landForSale.create({
@@ -38,11 +42,17 @@ export class LandForSaleService {
     });
   }
 
-  update(id: string, updateLandForSaleDto: UpdateLandForSaleDto) {
-    return this.prisma.landForSale.update({
+  async update(id: string, updateLandForSaleDto: UpdateLandForSaleDto) {
+    // ─── existing update logic — unchanged ───────────────────────────
+    const updated = await this.prisma.landForSale.update({
       where: { id },
       data: updateLandForSaleDto as any,
     });
+
+    // ─── after-update hook: mirror into Property when status set to APPROVED ───
+    await this.propertyMirror.syncApproved('land-for-sale', id, updateLandForSaleDto.status);
+
+    return updated;
   }
 
   remove(id: string) {

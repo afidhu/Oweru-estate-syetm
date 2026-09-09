@@ -30,12 +30,14 @@ import { CommercialAreaPropertyTypeModule } from './commercial-area-property-typ
 import { CommercialAreaImageModule } from './commercial-area-image/commercial-area-image.module';
 import { CommercialAreaDocumentModule } from './commercial-area-document/commercial-area-document.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { PropertyMirrorModule } from './property-mirror/property-mirror.module';
+import { PropertiesModule } from './properties/properties.module';
 
 @Module({
   imports: [CacheModule.register({
       isGlobal: true, // 🌍 This makes the cache layer available across all controllers
       ttl: 300,        // ⏱️ Cache data for 5 minutes (in seconds)
-    }), PrismaModule,AuthModule, UsersModule, PropertyCategoriesModule, HouseTypesModule, LandTypesModule, RegionsModule, DistrictsModule, WardsModule, BrokersModule, OwnersModule, CommissionsModule, HouseForSaleModule, HouseForSaleFeatureModule, HouseForSaleImageModule, HouseForSaleDocumentModule, LandForSaleModule, LandForSaleFeatureModule, LandForSaleImageModule, LandForSaleDocumentModule, CommercialAreaModule, CommercialAreaPropertyTypeModule, CommercialAreaImageModule, CommercialAreaDocumentModule, UploadsModule,],
+    }), PrismaModule,AuthModule, UsersModule, PropertyCategoriesModule, HouseTypesModule, LandTypesModule, RegionsModule, DistrictsModule, WardsModule, BrokersModule, OwnersModule, CommissionsModule, HouseForSaleModule, HouseForSaleFeatureModule, HouseForSaleImageModule, HouseForSaleDocumentModule, LandForSaleModule, LandForSaleFeatureModule, LandForSaleImageModule, LandForSaleDocumentModule, CommercialAreaModule, CommercialAreaPropertyTypeModule, CommercialAreaImageModule, CommercialAreaDocumentModule, UploadsModule, PropertyMirrorModule, PropertiesModule,],
   controllers: [AppController],
   providers: [ PrismaService,AppService],
   

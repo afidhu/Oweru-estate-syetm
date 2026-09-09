@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { CreateCommercialAreaDto } from './dto/create-commercial-area.dto';
 import { UpdateCommercialAreaDto } from './dto/update-commercial-area.dto';
 import { PrismaService } from '../prisma.config/prisma.service';
+import { PropertyMirrorService } from '../property-mirror/property-mirror.service';
 
 @Injectable()
 export class CommercialAreaService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly propertyMirror: PropertyMirrorService,
+  ) {}
 
   create(createCommercialAreaDto: CreateCommercialAreaDto) {
     const {
@@ -51,8 +55,14 @@ export class CommercialAreaService {
     return this.prisma.commercialArea.findUnique({ where: { id }, include: { propertyType: true, propertyCategory: true, broker: true, owner: true, region: true, district: true, ward: true, features: true, images: true, documents: true, videos: true } });
   }
 
-  update(id: string, updateCommercialAreaDto: UpdateCommercialAreaDto) {
-    return this.prisma.commercialArea.update({ where: { id }, data: updateCommercialAreaDto as any });
+  async update(id: string, updateCommercialAreaDto: UpdateCommercialAreaDto) {
+    // ─── existing update logic — unchanged ───────────────────────────
+    const updated = await this.prisma.commercialArea.update({ where: { id }, data: updateCommercialAreaDto as any });
+
+    // ─── after-update hook: mirror into Property when status set to APPROVED ───
+    await this.propertyMirror.syncApproved('commercial-area', id, updateCommercialAreaDto.status);
+
+    return updated;
   }
 
   remove(id: string) {

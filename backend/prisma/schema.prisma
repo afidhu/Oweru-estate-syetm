@@ -28,6 +28,107 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+
+
+// ==========================================
+// ENUMS FOR DATA VALIDATION (Based on Oweru Specs)
+
+
+enum SizeUnit {
+  sqm
+  acre
+  plot
+  metre
+  feet
+}
+
+enum ListingKind {
+  single
+  project
+  unit
+}
+
+// ==========================================
+// THE CORE PROPERTIES MODEL
+// ==========================================
+model Property {
+  id               String           @id @default(uuid())
+  externalId       String           @unique // Required: Permanent ID for syncing
+  status           String           // Required: "verified", "withdrawn", "sold", "rented"
+  verifiedAt       DateTime?        // Optional
+  verifiedBy       String?          // Optional
+  sourceUrl        String?          @db.Text // Optional
+  
+  // Property details
+  title            String           @db.VarChar(255) // Required headline
+  category         String           // Required: category slug, e.g. "house-for-sale"
+  price            Decimal          @db.Decimal(14, 2) // Required: Monthly for rent, total for sale
+  rentMonths       Int?             // Optional (Required for rent category)
+  description      String?          @db.LongText // Optional long form data
+  
+  // Property Category Specifics
+  houseType        String?          // Conditional: type slug/value, e.g. "apartment"
+  commercialType   String?          // Conditional: Matches your custom commercial list
+  landType         String?          // Conditional: type slug/value, e.g. "residential"
+  bedrooms         Int?             // Conditional
+  bathrooms        Int?             // Conditional
+  ensuiteCount     Int?             // Optional
+  
+  // Nested Size Object Flattened
+  sizeValue        Decimal?         @db.Decimal(12, 2)
+  sizeUnit         SizeUnit?        
+  sizeWidth        Decimal?         @db.Decimal(10, 2)
+  sizeLength       Decimal?         @db.Decimal(10, 2)
+  
+  // Dynamic Features List / Free-text
+  features         Json?            // Array array of strings, e.g. ["parking", "security"]
+  featuresOther    String?          @db.Text // Optional free-text
+  
+  // Nested Location Object Flattened
+  locationRegion   String           // Required
+  locationDistrict String           // Required
+  locationWard     String?          
+  locationStreet   String?          
+  locationGpsLat   Decimal?         @db.Decimal(9, 6)
+  locationGpsLng   Decimal?         @db.Decimal(9, 6)
+  
+  // Nested People Data Flattened (Keeps one person tracking robust)
+  ownerFullName    String?          
+  ownerPhone       String?          @db.VarChar(30)
+  ownerAltPhone    String?          @db.VarChar(30)
+  ownerEmail       String?          @db.VarChar(255)
+  ownerNationalId  String?          @db.VarChar(50) // NIDA number
+  
+  brokerFullName   String?          
+  brokerPhone      String?          @db.VarChar(30)
+  brokerAltPhone   String?          @db.VarChar(30)
+  brokerEmail      String?          @db.VarChar(255)
+  brokerNatReg     String?          // Broker operating region
+  brokerNatDist    String?          // Broker operating district
+  
+  // Media Assets Arrays
+  images           Json?            // Array of valid image URLs
+  videos           Json?            // Array of valid video URLs
+  
+  // Scheme Relationships
+  listingKind      ListingKind      @default(single)
+  parentExternalId String?          // References another property's externalId if it's a unit
+  unitLabel        String?          @db.VarChar(50)  // Unique code within that scheme
+  
+  // Timestamps for audit
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@map("Properties") // Forces SQL layer to use capital "Properties" name
+}
+
+
+
+
+
+
+
+
 model PropertyCategory {
   id                 String           @id @default(uuid())
   title              String           @unique // "House for rent", "House for sale", "Land for sale"...

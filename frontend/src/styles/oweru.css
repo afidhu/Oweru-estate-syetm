@@ -208,6 +208,17 @@ button, input, select, textarea { max-width: 100%; }
 .oweru-wizard-body .list-group-item > span:first-child i { flex: 0 0 auto; }
 .oweru-wizard-body .list-group-item > span:last-child { flex: 0 0 auto; }
 .oweru-wizard-body .list-group-item .btn-sm { flex: 0 0 auto; }
+
+/* Keep Back / Continue in view without scrolling to the bottom (all screens) */
+.oweru-wizard-body { display: flex; flex-direction: column; }
+.oweru-wizard-actions {
+  position: sticky; bottom: 0; z-index: 5;
+  margin-top: auto;
+  padding-bottom: .85rem;
+  background: #fff;
+  box-shadow: 0 -12px 18px -10px rgba(16, 26, 53, .14);
+}
+
 @media (max-width: 720px) {
   .oweru-wizard-body h5 { font-size: 1.08rem; }
   .oweru-upload-box { padding: 1rem .65rem; font-size: .86rem; }
@@ -216,13 +227,7 @@ button, input, select, textarea { max-width: 100%; }
   .oweru-wizard-body .list-group-item .btn-sm { --bs-btn-padding-x: .45rem; --bs-btn-padding-y: .2rem; --bs-btn-font-size: .8rem; }
   .oweru-wizard-body .form-label { font-size: .88rem; }
   .oweru-video-preview { max-width: 100%; }
-  /* Keep Back / Continue in view without scrolling to the bottom */
-  .oweru-wizard-actions {
-    position: sticky; bottom: 0; z-index: 5;
-    margin-top: 1.25rem !important; padding-bottom: .75rem;
-    background: #fff;
-    box-shadow: 0 -10px 16px -8px rgba(16, 26, 53, .12);
-  }
+  .oweru-map-placeholder { height: 170px; }
   .oweru-wizard-actions .btn { padding-top: .6rem; padding-bottom: .6rem; }
 }
 
