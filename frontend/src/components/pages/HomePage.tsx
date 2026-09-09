@@ -5,7 +5,7 @@ import { commercialAreaApi, houseForSaleApi, landForSaleApi, uploadApi } from '.
 
 import type { CategoryId, CommercialDetails, DetailsData, HouseDetails, LandDetails, LocationData } from '../../types'
 import LocationImagesStep from '../steps/LocationImagesStep';
-import DetailsStep from '../steps/DetailsStep';
+import DetailsStep, { BrokerOwnerStep } from '../steps/DetailsStep';
 import ReviewStep from '../steps/ReviewStep';
 import CategoryGrid from '../shared/CategoryGrid';
 import Stepper from '../shared/Stepper';
@@ -41,12 +41,14 @@ export default function HomePage() {
   const { tr } = useLanguage()
   const [category, setCategory] = useState<CategoryId | null>(null)
   const [propertyCategoryId, setPropertyCategoryId] = useState('')
-  const [step, setStep] = useState(0) // 0 = Details, 1 = Location & Images, 2 = Review
+  const [step, setStep] = useState(0)
   const [details, setDetails] = useState<DetailsData | null>(null)
   const [location, setLocation] = useState<LocationData>(emptyLocation)
   const [submitted, setSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isVideoUploading, setIsVideoUploading] = useState(false)
+  const [showErrors, setShowErrors] = useState(false)
+  const [banner, setBanner] = useState<{ tone: 'danger' | 'warning'; text: string } | null>(null)
 
   function startCategory(id: CategoryId, databaseId: string) {
     setCategory(id)
@@ -55,6 +57,8 @@ export default function HomePage() {
     setLocation(emptyLocation)
     setStep(0)
     setSubmitted(false)
+    setShowErrors(false)
+    setBanner(null)
   }
 
   function reset() {
@@ -71,13 +75,23 @@ export default function HomePage() {
   const canContinueFromDetails = Boolean(
     details?.propertyTitle.trim()
     && details.salePrice
-    && selectedType
-    && details.broker.name.trim()
-    && details.broker.phone.trim()
-    && details.owner.name.trim()
-    && details.owner.phone.trim(),
+    && selectedType,
+  )
+  const canContinueFromBrokerOwner = Boolean(
+    details?.broker.name.trim()
+    && details?.broker.phone.trim()
+    && details?.owner.name.trim()
+    && details?.owner.phone.trim(),
   )
   const canContinueFromLocation = Boolean(
+    location.regionId
+    && location.districtId
+    && location.wardId
+    && location.exactLocation.trim()
+    && location.lat !== null
+    && location.lng !== null,
+  )
+  const canContinueFromImages = Boolean(
     location.images.length > 0
     && location.videoUrl
     && location.documents.length > 0
@@ -89,21 +103,25 @@ export default function HomePage() {
       ? (details as HouseDetails).houseType
       : category === 'land-sale' ? (details as LandDetails).landType : (details as CommercialDetails).commercialType
     if (!details?.propertyTitle.trim() || !details.salePrice || !selectedType) {
-      alert(tr('Please complete the property title, sale price, and property type.'))
+      setBanner({ tone: 'warning', text: tr('Please complete the property title, sale price, and property type.') })
+      setStep(0)
       return
     }
     if (!details.broker.name.trim() || !details.broker.phone.trim() || !details.owner.name.trim() || !details.owner.phone.trim()) {
-      alert(tr('Broker and owner names and phone numbers are required.'))
+      setBanner({ tone: 'warning', text: tr('Broker and owner names and phone numbers are required.') })
+      setStep(1)
       return
     }
 
+    const sizeNum = details?.size ? parseFloat(details.size) : NaN
+    setBanner(null)
     setIsSubmitting(true)
     try {
       const common = {
         title: details?.propertyTitle || '',
         salePrice: details?.salePrice ? parseFloat(details.salePrice) : 0,
         sizeUnit: details?.sizeUnit || undefined,
-        size: details?.size ? parseFloat(details.size) : undefined,
+        size: Number.isFinite(sizeNum) ? sizeNum : undefined,
         status: details?.status || 'ACTIVE',
         propertyCategoryId,
         regionId: location.regionId || undefined,
@@ -143,7 +161,7 @@ export default function HomePage() {
       setSubmitted(true)
     } catch (error) {
       console.error('Error submitting to backend:', error)
-      alert(tr('Failed to submit property. Please try again.'))
+      setBanner({ tone: 'danger', text: tr('Failed to submit property. Please try again.') })
     } finally {
       setIsSubmitting(false)
     }
@@ -158,17 +176,25 @@ export default function HomePage() {
           <CategoryGrid onSelect={startCategory} />
         ) : (
           <div className="oweru-panel">
-            <div className="d-flex align-items-center justify-content-between mb-3">
-              <div>
+            <div className="d-flex align-items-center justify-content-between mb-3 oweru-panel-head">
+              <div className="oweru-panel-title-block">
                 <span className="text-muted small">{tr('Register Estate')}</span>
                 <h5 className="mb-0">{tr(category === 'house-sale' ? 'House for Sale' : category === 'land-sale' ? 'Land for Sale' : 'Commercial Area for Sale')}</h5>
               </div>
-              <button className="btn btn-sm btn-link text-decoration-none" onClick={reset}>
+              <button className="btn btn-sm btn-link text-decoration-none ms-auto" onClick={reset}>
                 <i className="bi bi-x-lg me-1" /> {tr('Cancel')}
               </button>
             </div>
 
-            <Stepper currentStep={submitted ? 3 : step} />
+            {banner && (
+              <div className="oweru-toast-wrap" role="alert">
+                <div className={`alert alert-${banner.tone} alert-dismissible d-flex align-items-start gap-2 oweru-toast`}>
+                  <i className={`bi ${banner.tone === 'danger' ? 'bi-exclamation-octagon-fill' : 'bi-exclamation-triangle-fill'} mt-1`} />
+                  <div className="flex-grow-1">{banner.text}</div>
+                  <button type="button" className="btn-close" aria-label={tr('Close')} onClick={() => setBanner(null)} />
+                </div>
+              </div>
+            )}
 
             {submitted ? (
               <div className="text-center py-5">
@@ -178,35 +204,67 @@ export default function HomePage() {
                 <button className="btn btn-oweru mt-2" onClick={reset}>{tr('Register another estate')}</button>
               </div>
             ) : (
-              <>
+              <div className="oweru-wizard">
+                <aside className="oweru-wizard-nav">
+                  <div className="oweru-wizard-title">
+                    <span className="text-muted small">{tr('Register Estate')}</span>
+                    <strong>{tr(category === 'house-sale' ? 'House for Sale' : category === 'land-sale' ? 'Land for Sale' : 'Commercial Area for Sale')}</strong>
+                  </div>
+                  <Stepper currentStep={step} vertical />
+                </aside>
+                <div className="oweru-wizard-body">
                 {step === 0 && (
-                  <DetailsStep category={category} details={details} onChange={setDetails} />
+                  <DetailsStep category={category} details={details} onChange={setDetails} showErrors={showErrors} />
                 )}
                 {step === 1 && (
+                  <BrokerOwnerStep category={category} details={details} onChange={setDetails} showErrors={showErrors} />
+                )}
+                {step === 2 && (
                   <LocationImagesStep
+                    mode="location"
                     location={location}
                     descriptionHint={DESCRIPTION_HINTS[category]}
                     onChange={setLocation}
                     onVideoUploading={setIsVideoUploading}
+                    showErrors={showErrors}
                   />
                 )}
-                {step === 2 && (
+                {step === 3 && (
+                  <LocationImagesStep
+                    mode="images"
+                    location={location}
+                    descriptionHint={DESCRIPTION_HINTS[category]}
+                    onChange={setLocation}
+                    onVideoUploading={setIsVideoUploading}
+                    showErrors={showErrors}
+                  />
+                )}
+                {step === 4 && (
                   <ReviewStep category={category} details={details} location={location} />
                 )}
 
                 <div className="d-flex justify-content-between mt-4 pt-3 border-top">
                   <button
                     className="btn btn-outline-secondary"
-                    onClick={() => step === 0 ? reset() : setStep((s) => s - 1)}
+                    onClick={() => { setBanner(null); step === 0 ? reset() : setStep((s) => s - 1) }}
                   >
                     <i className="bi bi-arrow-left me-1" /> {tr('Back')}
                   </button>
 
-                  {step < 2 ? (
+                  {step < 4 ? (
                     <button
                       className="btn btn-oweru"
-                      disabled={(step === 0 && !canContinueFromDetails) || (step === 1 && !canContinueFromLocation)}
-                      onClick={() => setStep((s) => s + 1)}
+                      onClick={() => {
+                        const ok =
+                          (step === 0 && canContinueFromDetails)
+                          || (step === 1 && canContinueFromBrokerOwner)
+                          || (step === 2 && canContinueFromLocation)
+                          || (step === 3 && canContinueFromImages)
+                        if (!ok) { setShowErrors(true); return }
+                        setShowErrors(false)
+                        setBanner(null)
+                        setStep((s) => s + 1)
+                      }}
                     >
                       {tr('Continue')} <i className="bi bi-arrow-right ms-1" />
                     </button>
@@ -216,7 +274,8 @@ export default function HomePage() {
                     </button>
                   )}
                 </div>
-              </>
+                </div>
+              </div>
             )}
           </div>
         )}
