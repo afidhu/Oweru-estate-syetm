@@ -68,7 +68,7 @@ export class CreateLandForSaleDto {
 
   @IsString()
   @IsOptional()
-  @IsIn(['ACTIVE', 'PENDING', 'SOLD', 'ARCHIVED', 'APPROVED'])
+  @IsIn(['ACTIVE', 'PENDING', 'SOLD', 'ARCHIVED', 'APPROVE', 'APPROVED'])
   status?: string;
 
   @IsUUID()
