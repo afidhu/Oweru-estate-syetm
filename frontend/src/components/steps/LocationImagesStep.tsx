@@ -14,6 +14,8 @@ interface LocationImagesStepProps {
   onChange: (next: LocationData) => void;
   onVideoUploading?: (uploading: boolean) => void;
   showErrors?: boolean;
+  /** Mobile-only paging: null = show everything (desktop); 0 = base fields; 1 = split-off section. */
+  mobilePage?: 0 | 1 | null;
 }
 
 export default function LocationImagesStep({
@@ -22,6 +24,7 @@ export default function LocationImagesStep({
   descriptionHint,
   onChange,
   onVideoUploading,
+  mobilePage = null,
   showErrors = false,
 }: LocationImagesStepProps) {
   const { tr } = useLanguage();
@@ -75,8 +78,10 @@ export default function LocationImagesStep({
     return () => {
       map.remove();
       mapInstanceRef.current = null;
+      setIsMapReady(false);
     };
-  }, []);
+    // re-run when the map container (re)mounts due to mobile paging
+  }, [mobilePage, mode]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !isMapReady) return;
@@ -407,8 +412,11 @@ export default function LocationImagesStep({
       <h5 className="mb-1">{tr("Location")}</h5>
       <p className="text-muted mb-4">{tr("Region, GPS and photos")}</p>
 
+      {mobilePage !== 1 && (
       <LocationForm location={location} onChange={onChange} regions={regions} districts={districts} wards={wards} showErrors={showErrors} />
+      )}
 
+      {mobilePage !== 0 && (<>
       <label className="form-label fw-semibold">{tr("Map")}</label>
       <div className="input-group mb-2">
         <input
@@ -482,6 +490,7 @@ export default function LocationImagesStep({
         onChange={(e) => set({ description: e.target.value })}
       />
       <p className="text-muted small mb-4">{tr("Built from the category, sub-type, size, rooms, amenities, location and price on this form. Edit it if you want to.")}</p>
+      </>)}
     </div>
   );
 }

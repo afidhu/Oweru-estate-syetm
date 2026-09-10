@@ -63,6 +63,8 @@ interface DetailsStepProps {
   details: DetailsData
   onChange: (next: DetailsData) => void
   showErrors?: boolean
+  /** Mobile-only paging: null = show everything (desktop); 0 = base fields; 1 = split-off section. */
+  mobilePage?: 0 | 1 | null
 }
 
 function FeatureChips({
@@ -268,7 +270,7 @@ export function FeaturesStep({ category, details, onChange }: DetailsStepProps) 
   )
 }
 
-export default function DetailsStep({ category, details, onChange, showErrors = false }: DetailsStepProps) {
+export default function DetailsStep({ category, details, onChange, showErrors = false, mobilePage = null }: DetailsStepProps) {
   const { tr } = useLanguage()
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const mark = (k: string) => setTouched((t) => ({ ...t, [k]: true }))
@@ -453,6 +455,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
       <h5 className="mb-1">{tr('Property details')}</h5>
       <p className="text-muted mb-4">{tr('Provide details about the property.')}</p>
 
+      {mobilePage !== 1 && (<>
       <label className="form-label fw-semibold">{tr('Property title')} <span className="text-danger">*</span></label>
       <input
         className={`form-control mb-2 ${invalid('propertyTitle', !d.propertyTitle.trim())}`}
@@ -492,7 +495,9 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
 
       <label className="form-label fw-semibold d-block">{tr('Size')}</label>
       <SizeField unit={d.sizeUnit} value={d.size} onChange={(size) => set({ size })} />
+      </>)}
 
+      {mobilePage !== 0 && (<>
       <label className="form-label fw-semibold d-block">{tr('Commercial property type')} <span className="text-danger">*</span></label>
       <p className="text-muted small mb-2">{tr('Buildings and open land plots show different amenities.')}</p>
 
@@ -524,6 +529,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
           </>
         )
       })()}
+      </>)}
     </div>
   )
 }
