@@ -86,7 +86,7 @@ export class CreateCommercialAreaDto {
 
   @IsString()
   @IsOptional()
-  @IsIn(['ACTIVE', 'PENDING', 'SOLD', 'RENTED', 'ARCHIVED', 'APPROVED'])
+  @IsIn(['ACTIVE', 'PENDING', 'SOLD', 'RENTED', 'ARCHIVED', 'APPROVE', 'APPROVED'])
   status?: string;
 
   @IsUUID()

@@ -33,7 +33,8 @@ export class PropertyMirrorService {
     id: string,
     incomingStatus?: string | null,
   ): Promise<void> {
-    if ((incomingStatus ?? '').toUpperCase() !== 'APPROVED') return;
+    const normalized = (incomingStatus ?? '').toUpperCase();
+    if (normalized !== 'APPROVE' && normalized !== 'APPROVED') return;
 
     try {
       const data =

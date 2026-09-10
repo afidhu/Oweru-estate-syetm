@@ -20,6 +20,7 @@ const emptyCategory = { title: '', slug: '', description: '', icon: '', accent: 
 const endpoint = (kind: ListingKind) => `/${kind}`
 const slugify = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 const money = (value: Listing['salePrice']) => value === null || value === undefined || value === '' ? 'Price not set' : `TZS ${Number(value).toLocaleString()}`
+const prettyStatus = (value: string) => value ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase() : value
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -50,7 +51,19 @@ export default function Dashboard() {
   const [listingFormId, setListingFormId] = useState<string | null>(null)
   const [addListingOpen, setAddListingOpen] = useState(false)
   const [newListing, setNewListing] = useState({ kind: 'house-for-sale' as ListingKind, title: '', salePrice: '', listingType: 'SALE' })
+  const [confirm, setConfirm] = useState<{ title: string; message: ReactNode; confirmLabel?: string; onConfirm: () => void } | null>(null)
+  const sidebarRef = useRef<HTMLElement>(null)
   const queryClient = useQueryClient()
+  useEffect(() => {
+    const el = sidebarRef.current
+    if (!el) return
+    const apply = () => document.documentElement.style.setProperty('--admin-topbar-h', `${el.offsetHeight}px`)
+    apply()
+    const observer = new ResizeObserver(apply)
+    observer.observe(el)
+    window.addEventListener('resize', apply)
+    return () => { observer.disconnect(); window.removeEventListener('resize', apply) }
+  }, [])
   const { data: dashboardData, isLoading: loading, isError: dashboardQueryError } = useQuery<DashboardData>({
     queryKey: ['dashboard-data'],
     queryFn: async () => {
@@ -129,9 +142,10 @@ export default function Dashboard() {
     try { const data = { ...personForm, email: personForm.email || undefined, nid: personForm.nid || undefined, tin: personForm.tin || undefined }; personModal.id ? await api.patch(`/${personModal.kind}/${personModal.id}`, data) : await api.post(`/${personModal.kind}`, data); setPersonModal(null); flash('Contact saved successfully.'); void loadData() }
     catch (requestError) { console.error(requestError); setError('The contact could not be saved.') } finally { setSaving(false) }
   }
-  async function deletePerson(kind: PersonKind, id: string) {
-    if (!window.confirm('Delete this contact?')) return
-    try { await api.delete(`/${kind}/${id}`); flash('Contact deleted.'); void loadData() } catch (requestError) { console.error(requestError); setError('The contact could not be deleted.') }
+  function deletePerson(kind: PersonKind, id: string) {
+    setConfirm({ title: 'Delete contact', message: 'Delete this contact? This action cannot be undone.', confirmLabel: 'Delete contact', onConfirm: async () => {
+      try { await api.delete(`/${kind}/${id}`); flash('Contact deleted.'); void loadData() } catch (requestError) { console.error(requestError); setError('The contact could not be deleted.') }
+    } })
   }
   function openCategory(category?: PropertyCategoryRecord) {
     setCategoryModal({ id: category?.id })
@@ -142,9 +156,10 @@ export default function Dashboard() {
     try { const data = { ...categoryForm, description: categoryForm.description || undefined, icon: categoryForm.icon || undefined, accent: categoryForm.accent || undefined }; categoryModal.id ? await api.patch(`/property-categories/${categoryModal.id}`, data) : await api.post('/property-categories', data); setCategoryModal(null); flash('Category saved successfully.'); void loadData() }
     catch (requestError) { console.error(requestError); setError('The category could not be saved.') } finally { setSaving(false) }
   }
-  async function deleteCategory(id: string) {
-    if (!window.confirm('Delete this category?')) return
-    try { await api.delete(`/property-categories/${id}`); flash('Category deleted.'); void loadData() } catch (requestError) { console.error(requestError); setError('The category could not be deleted.') }
+  function deleteCategory(id: string) {
+    setConfirm({ title: 'Delete category', message: 'Delete this category? This action cannot be undone.', confirmLabel: 'Delete category', onConfirm: async () => {
+      try { await api.delete(`/property-categories/${id}`); flash('Category deleted.'); void loadData() } catch (requestError) { console.error(requestError); setError('The category could not be deleted.') }
+    } })
   }
   async function saveListing(event: FormEvent) {
     event.preventDefault(); if (!listingModal || !(listingForm.title ?? '').trim()) return; setSaving(true)
@@ -168,9 +183,17 @@ export default function Dashboard() {
     try { await api.patch(`${endpoint(listingModal.category)}/${listingModal.id}`, payload); closeListingEdit(); flash('Listing updated successfully.'); void loadData() }
     catch (requestError) { console.error(requestError); setError('The listing could not be updated.') } finally { setSaving(false) }
   }
-  async function deleteListing(listing: Listing) {
-    if (!window.confirm(`Delete ${listing.title}?`)) return
-    try { await api.delete(`${endpoint(listing.category)}/${listing.id}`); flash('Listing deleted.'); void loadData() } catch (requestError) { console.error(requestError); setError('The listing could not be deleted.') }
+  function deleteListing(listing: Listing) {
+    setConfirm({
+      title: 'Delete listing',
+      message: <>
+        Delete <strong>{listing.title}</strong>? This action cannot be undone.
+      </>,
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        try { await api.delete(`${endpoint(listing.category)}/${listing.id}`); flash('Listing deleted.'); void loadData() } catch (requestError) { console.error(requestError); setError('The listing could not be deleted.') }
+      },
+    })
   }
   async function viewListingDetails(listing: Listing) {
     setViewListing(null)
@@ -195,11 +218,11 @@ export default function Dashboard() {
   }
 
   return <div className="admin-shell">
-    <aside className="admin-sidebar"><a className="admin-brand" href="/"><img src="/assets/logo.jpeg" alt="oweru estate" /><span className="admin-brand-word">Register <span>Estate</span></span></a><div className="admin-sidebar-label">Workspace</div><nav className="admin-nav">{([['overview', 'grid-1x2', 'Overview'], ['listings', 'buildings', 'Listings'], ['people', 'people', 'People'], ['categories', 'tags', 'Categories']] as const).filter(([value]) => !(authUser.role === 'MARKETER' && value === 'categories')).map(([value, icon, label]) => <button key={value} className={section === value ? 'active' : ''} onClick={() => setSection(value)}><i className={`bi bi-${icon}`} /> {label}{value === 'listings' && <span className="admin-nav-count">{listings.length}</span>}{value === 'categories' && <span className="admin-nav-count">{categories.length}</span>}</button>)}</nav><div className="admin-sidebar-bottom"><div className="admin-user-avatar">{avatarLabel}</div><div className="admin-user-info"><strong>{roleLabel}</strong><small>{authUser.username || 'Estate operations'}</small></div><button className="admin-logout" type="button" title="Log out" aria-label="Log out" onClick={logout}><i className="bi bi-box-arrow-right" /></button></div></aside>
+    <aside className="admin-sidebar" ref={sidebarRef}><a className="admin-brand" href="/"><img src="/assets/logo.jpeg" alt="oweru estate" /><span className="admin-brand-word">Register <span>Estate</span></span></a><div className="admin-sidebar-label">Workspace</div><nav className="admin-nav">{([['overview', 'grid-1x2', 'Overview'], ['listings', 'buildings', 'Listings'], ['people', 'people', 'People'], ['categories', 'tags', 'Categories']] as const).filter(([value]) => !(authUser.role === 'MARKETER' && value === 'categories')).map(([value, icon, label]) => <button key={value} className={section === value ? 'active' : ''} onClick={() => setSection(value)}><i className={`bi bi-${icon}`} /> {label}{value === 'listings' && <span className="admin-nav-count">{listings.length}</span>}{value === 'categories' && <span className="admin-nav-count">{categories.length}</span>}</button>)}</nav><div className="admin-sidebar-bottom"><div className="admin-user-avatar">{avatarLabel}</div><div className="admin-user-info"><strong>{roleLabel}</strong><small>{authUser.username || 'Estate operations'}</small></div><button className="admin-logout" type="button" title="Log out" aria-label="Log out" onClick={logout}><i className="bi bi-box-arrow-right" /></button></div></aside>
     <main className="admin-main"><header className="admin-topbar"><div><span className="admin-kicker">Operations center</span><h1>{section === 'overview' ? `${greeting}, ${roleLabel}` : section === 'listings' ? 'Property listings' : section === 'people' ? 'People directory' : 'Property categories'}</h1></div><div className="admin-top-actions"><span className="admin-live"><span /> Live data</span><button className="admin-icon-button" title="Refresh data" onClick={() => void loadData()}><i className="bi bi-arrow-clockwise" /></button><button className="admin-primary" onClick={() => section === 'people' ? openPerson(personKind) : section === 'categories' ? openCategory() : setAddListingOpen(true)}><i className="bi bi-plus-lg" /> {section === 'people' ? 'Add person' : section === 'categories' ? 'Add category' : 'Add listing'}</button></div></header>
       {(error || dashboardError || viewQueryError) && <div className="admin-alert error"><i className="bi bi-exclamation-circle" /> {error || dashboardError || 'The listing details could not be loaded.'}<button onClick={() => setError('')}><i className="bi bi-x" /></button></div>}{notice && <div className="admin-alert success"><i className="bi bi-check-circle" /> {notice}</div>}
       {section === 'overview' && <><section className="admin-metrics"><Metric icon="buildings" label="Total listings" value={listings.length} detail="Across all property types" tone="navy" /><Metric icon="check2-circle" label="Active listings" value={active} detail={`${listings.length ? Math.round(active / listings.length * 100) : 0}% of portfolio`} tone="gold" /><Metric icon="hourglass-split" label="Needs attention" value={pending} detail="Pending review" tone="coral" /><Metric icon="people" label="People managed" value={brokers.length + owners.length} detail={`${brokers.length} brokers - ${owners.length} owners`} tone="green" /></section><div className="admin-content-grid"><section className="admin-panel admin-panel-wide"><PanelHeading title="Recent listings" action="View all" onAction={() => setSection('listings')} />{loading ? <Loading /> : <ListingTable listings={listings.slice(0, 6)} onEdit={openListingEdit} onDelete={deleteListing} onView={viewListingDetails} />}</section><section className="admin-panel"><PanelHeading title="Portfolio mix" /><div className="portfolio-list">{(Object.keys(labels) as ListingKind[]).map((kind) => { const count = listings.filter((item) => item.category === kind).length; return <div className="portfolio-row" key={kind}><span className={`portfolio-icon ${kind}`}><i className={`bi bi-${kind === 'house-for-sale' ? 'house' : kind === 'land-for-sale' ? 'geo' : 'shop'}`} /></span><div><strong>{labels[kind]}</strong><small>{count} listings</small></div><b>{listings.length ? Math.round(count / listings.length * 100) : 0}%</b></div> })}</div><div className="admin-mini-note"><i className="bi bi-shield-check" /><span><strong>All systems operational</strong><small>Last synced just now</small></span></div></section></div></>}
-      {section === 'listings' && <section className="admin-panel admin-full-panel"><div className="admin-toolbar"><Search value={query} onChange={setQuery} placeholder="Search title, owner or broker" /><select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as typeof kindFilter)}><option value="ALL">All property types</option>{(Object.keys(labels) as ListingKind[]).map((kind) => <option key={kind} value={kind}>{labels[kind]}</option>)}</select><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="ALL">All statuses</option><option>ACTIVE</option><option>PENDING</option><option>SOLD</option><option>ARCHIVED</option></select></div>{loading ? <Loading /> : <><ListingTable listings={pagedListings} onEdit={openListingEdit} onDelete={deleteListing} onView={viewListingDetails} emptyMessage="No listings match your filters." /><Pager page={listingPage} pageCount={listingPageCount} total={filteredListings.length} onChange={setListingPage} /></>}</section>}
+      {section === 'listings' && <section className="admin-panel admin-full-panel"><div className="admin-toolbar"><Search value={query} onChange={setQuery} placeholder="Search title, owner or broker" /><ToolbarSelect value={kindFilter} options={['ALL', ...(Object.keys(labels) as ListingKind[])]} getLabel={(v) => v === 'ALL' ? 'All property types' : labels[v as ListingKind]} onChange={(v) => setKindFilter(v as typeof kindFilter)} /><ToolbarSelect value={status} options={['ALL', 'ACTIVE', 'PENDING', 'SOLD', 'ARCHIVED']} getLabel={(v) => v === 'ALL' ? 'All statuses' : prettyStatus(v)} onChange={setStatus} /></div>{loading ? <Loading /> : <><ListingTable listings={pagedListings} onEdit={openListingEdit} onDelete={deleteListing} onView={viewListingDetails} emptyMessage="No listings match your filters." /><Pager page={listingPage} pageCount={listingPageCount} total={filteredListings.length} onChange={setListingPage} /></>}</section>}
       {section === 'people' && <section className="admin-panel admin-full-panel"><div className="people-tabs"><button className={personKind === 'brokers' ? 'active' : ''} onClick={() => setPersonKind('brokers')}><i className="bi bi-briefcase" /> Brokers <b>{brokers.length}</b></button><button className={personKind === 'owners' ? 'active' : ''} onClick={() => setPersonKind('owners')}><i className="bi bi-person" /> Owners <b>{owners.length}</b></button><div className="people-search"><Search value={query} onChange={setQuery} placeholder="Search people" /></div></div><PeopleTable people={pagedPeople} kind={personKind} onEdit={openPerson} onDelete={deletePerson} /><Pager page={peoplePage} pageCount={peoplePageCount} total={filteredPeople.length} onChange={setPeoplePage} /></section>}
       {section === 'categories' && <section className="admin-panel admin-full-panel"><div className="admin-toolbar"><Search value={query} onChange={setQuery} placeholder="Search categories" /></div><CategoriesTable categories={categories.filter((category) => `${category.title} ${category.slug}`.toLowerCase().includes(query.toLowerCase()))} onEdit={openCategory} onDelete={deleteCategory} /></section>}
     </main>
@@ -221,6 +244,19 @@ export default function Dashboard() {
     {viewLoading && !listingModal && <div className="modal-backdrop" role="status"><div className="admin-modal"><Loading /></div></div>}
     {viewListing && !listingModal && <ListingViewModal listing={viewListing} onClose={() => { setViewListing(null); setListingToView(null) }} />}
     {addListingOpen && <Modal title="Add quick listing" onClose={() => setAddListingOpen(false)}><form onSubmit={addListing} className="admin-form"><div className="form-grid"><label>Property type<select value={newListing.kind} onChange={(event) => setNewListing({ ...newListing, kind: event.target.value as ListingKind })}>{(Object.keys(labels) as ListingKind[]).map((kind) => <option key={kind} value={kind}>{labels[kind]}</option>)}</select></label>{newListing.kind === 'commercial-area' && <label>Listing type<select value={newListing.listingType} onChange={(event) => setNewListing({ ...newListing, listingType: event.target.value })}><option>SALE</option><option>RENT</option></select></label>}<Field label="Property title" required value={newListing.title} onChange={(value) => setNewListing({ ...newListing, title: value })} /><Field label="Sale price" money required value={newListing.salePrice} onChange={(value) => setNewListing({ ...newListing, salePrice: value })} /></div><ModalActions saving={saving} label="Add listing" /></form></Modal>}
+    {confirm && <ConfirmModal title={confirm.title} message={confirm.message} confirmLabel={confirm.confirmLabel} onCancel={() => setConfirm(null)} onConfirm={() => { const run = confirm.onConfirm; setConfirm(null); run() }} />}
+  </div>
+}
+function ConfirmModal({ title, message, confirmLabel = 'Delete', onCancel, onConfirm }: { title: string; message: ReactNode; confirmLabel?: string; onCancel: () => void; onConfirm: () => void }) {
+  return <div className="modal-backdrop confirm-backdrop" role="dialog" aria-modal="true" style={{ zIndex: 1100 }} onClick={onCancel}>
+    <div className="admin-modal confirm-modal" onClick={(event) => event.stopPropagation()}>
+      <div className="modal-heading"><div><span>Please confirm</span><h2>{title}</h2></div><button onClick={onCancel} title="Close" type="button"><i className="bi bi-x-lg" /></button></div>
+      <div className="confirm-modal-body"><p>{message}</p></div>
+      <div className="modal-actions confirm-modal-actions">
+        <button type="button" className="admin-ghost" onClick={onCancel}>Cancel</button>
+        <button type="button" className="admin-danger" onClick={onConfirm}>{confirmLabel}</button>
+      </div>
+    </div>
   </div>
 }
 
@@ -242,7 +278,7 @@ function Field({ label, value, onChange, type = 'text', required = false, money:
 }
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) { return <div className="modal-backdrop" role="dialog" aria-modal="true"><div className="admin-modal"><div className="modal-heading"><div><span>Admin workspace</span><h2>{title}</h2></div><button onClick={onClose} title="Close"><i className="bi bi-x-lg" /></button></div>{children}</div></div> }
 function ModalActions({ saving, label = 'Save changes' }: { saving: boolean; label?: string }) { return <div className="modal-actions"><button type="submit" className="admin-primary" disabled={saving}>{saving ? 'Saving...' : label}</button></div> }
-function ListingTable({ listings, onEdit, onDelete, onView, emptyMessage = 'No listings yet.' }: { listings: Listing[]; onEdit: (listing: Listing) => void; onDelete: (listing: Listing) => void; onView: (listing: Listing) => void; emptyMessage?: string }) { return listings.length ? <div className="table-wrap"><table className="admin-table"><thead><tr><th>Property</th><th>Type</th><th>Price</th><th>Status</th><th>Contacts</th><th /></tr></thead><tbody>{listings.map((listing) => <tr key={`${listing.category}-${listing.id}`}><td><div className="property-cell"><span className="property-thumb"><i className={`bi bi-${listing.category === 'house-for-sale' ? 'house' : listing.category === 'land-for-sale' ? 'geo' : 'shop'}`} /></span><span><strong>{listing.title || 'Untitled property'}</strong><small>{listing.id.slice(0, 8)} · {listing.createdAt ? new Date(listing.createdAt).toLocaleDateString() : 'Recently added'}</small></span></div></td><td>{labels[listing.category]}</td><td><strong>{money(listing.salePrice)}</strong></td><td><span className={`status-pill ${(listing.status ?? 'ACTIVE').toLowerCase()}`}>{listing.status ?? 'ACTIVE'}</span></td><td><small>{listing.owner?.name ?? 'No owner'}<br />{listing.broker?.name ?? 'No broker'}</small></td><td><div className="row-actions"><button title="View details" onClick={() => onView(listing)}><i className="bi bi-eye" /></button><button title="Edit" onClick={() => onEdit(listing)}><i className="bi bi-pencil" /></button><button title="Delete" onClick={() => onDelete(listing)}><i className="bi bi-trash3" /></button></div></td></tr>)}</tbody></table></div> : <div className="empty-state"><i className="bi bi-inbox" /><strong>{emptyMessage}</strong><span>Try changing your filters or add a new listing.</span></div> }
+function ListingTable({ listings, onEdit, onDelete, onView, emptyMessage = 'No listings yet.' }: { listings: Listing[]; onEdit: (listing: Listing) => void; onDelete: (listing: Listing) => void; onView: (listing: Listing) => void; emptyMessage?: string }) { return listings.length ? <div className="table-wrap"><table className="admin-table"><thead><tr><th>Property</th><th>Type</th><th>Price</th><th>Status</th><th>Contacts</th><th /></tr></thead><tbody>{listings.map((listing) => <tr key={`${listing.category}-${listing.id}`}><td><div className="property-cell"><span className="property-thumb"><i className={`bi bi-${listing.category === 'house-for-sale' ? 'house' : listing.category === 'land-for-sale' ? 'geo' : 'shop'}`} /></span><span><strong>{listing.title || 'Untitled property'}</strong><small>{listing.createdAt ? new Date(listing.createdAt).toLocaleDateString() : 'Recently added'}</small></span></div></td><td>{labels[listing.category]}</td><td><strong>{money(listing.salePrice)}</strong></td><td><span className={`status-pill ${(listing.status ?? 'ACTIVE').toLowerCase()}`}>{prettyStatus(listing.status ?? 'ACTIVE')}</span></td><td><small>{listing.owner?.name ?? 'No owner'}<br />{listing.broker?.name ?? 'No broker'}</small></td><td><div className="row-actions"><button title="View details" onClick={() => onView(listing)}><i className="bi bi-eye" /></button><button title="Edit" onClick={() => onEdit(listing)}><i className="bi bi-pencil" /></button><button title="Delete" onClick={() => onDelete(listing)}><i className="bi bi-trash3" /></button></div></td></tr>)}</tbody></table></div> : <div className="empty-state"><i className="bi bi-inbox" /><strong>{emptyMessage}</strong><span>Try changing your filters or add a new listing.</span></div> }
 function ListingViewModal({ listing, onClose }: { listing: ListingDetail; onClose: () => void }) {
   const mediaKeys = new Set(['images', 'documents', 'videos', 'features'])
   const scalarDetails = Object.entries(listing).filter(([key, value]) => key !== 'id' && !key.endsWith('Id') && !mediaKeys.has(key) && value !== null && value !== undefined && typeof value !== 'object')
@@ -273,7 +309,22 @@ const LISTING_TEXT_FIELDS: { key: string; label: string; type?: 'number' | 'text
   { key: 'longitude', label: 'Longitude', type: 'number' },
   { key: 'description', label: 'Description' },
 ]
-const LISTING_STATUSES = ['ACTIVE', 'PENDING', 'SOLD', 'APPROVED']
+const LISTING_STATUSES = ['ACTIVE', 'PENDING', 'SOLD', 'APPROVE']
+function ToolbarSelect({ value, options, getLabel = (o) => o, onChange }: { value: string; options: string[]; getLabel?: (option: string) => string; onChange: (value: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const onDoc = (event: MouseEvent) => { if (!ref.current?.contains(event.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [])
+  return <div className="oweru-location-select admin-toolbar-select" ref={ref}>
+    <button type="button" className="form-select oweru-location-select-trigger" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}><span>{getLabel(value)}</span></button>
+    {open && <div className="oweru-location-select-menu" role="listbox">{options.map((option) => (
+      <button type="button" role="option" aria-selected={option === value} key={option} className={`oweru-location-option ${option === value ? 'selected' : ''}`} onClick={() => { onChange(option); setOpen(false) }}>{getLabel(option)}</button>
+    ))}</div>}
+  </div>
+}
 function StatusSelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -283,9 +334,9 @@ function StatusSelect({ value, onChange }: { value: string; onChange: (value: st
     return () => document.removeEventListener('mousedown', onDoc)
   }, [])
   return <label>Status<div className="oweru-location-select" ref={ref}>
-    <button type="button" className="form-select oweru-location-select-trigger" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}><span>{value || 'ACTIVE'}</span></button>
+    <button type="button" className="form-select oweru-location-select-trigger" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}><span>{prettyStatus(value || 'ACTIVE')}</span></button>
     {open && <div className="oweru-location-select-menu" role="listbox">{LISTING_STATUSES.map((option) => (
-      <button type="button" role="option" aria-selected={option === value} key={option} className={`oweru-location-option ${option === value ? 'selected' : ''}`} onClick={() => { onChange(option); setOpen(false) }}>{option}</button>
+      <button type="button" role="option" aria-selected={option === value} key={option} className={`oweru-location-option ${option === value ? 'selected' : ''}`} onClick={() => { onChange(option); setOpen(false) }}>{prettyStatus(option)}</button>
     ))}</div>}
   </div></label>
 }
