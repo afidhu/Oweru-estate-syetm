@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import useIsMobile from '../../hooks/useIsMobile'
 
 import { commercialAreaApi, houseForSaleApi, landForSaleApi, uploadApi } from '../../services/api'
 
@@ -42,6 +43,8 @@ export default function HomePage() {
   const [category, setCategory] = useState<CategoryId | null>(null)
   const [propertyCategoryId, setPropertyCategoryId] = useState('')
   const [step, setStep] = useState(0)
+  const [subStep, setSubStep] = useState<0 | 1>(0)
+  const isMobile = useIsMobile()
   const [details, setDetails] = useState<DetailsData | null>(null)
   const [location, setLocation] = useState<LocationData>(emptyLocation)
   const [submitted, setSubmitted] = useState(false)
@@ -56,6 +59,7 @@ export default function HomePage() {
     setDetails(makeDetails(id))
     setLocation(emptyLocation)
     setStep(0)
+    setSubStep(0)
     setSubmitted(false)
     setShowErrors(false)
     setBanner(null)
@@ -66,6 +70,7 @@ export default function HomePage() {
     setPropertyCategoryId('')
     setDetails(null)
     setStep(0)
+    setSubStep(0)
     setSubmitted(false)
   }
 
@@ -99,6 +104,14 @@ export default function HomePage() {
     && !isVideoUploading,
   )
 
+  // Mobile-only: step 0 (commercial only) and step 3 are split into two sub-pages.
+  const stepHasMobileSub = (s: number) => (s === 0 && category === 'commercial-sale') || s === 3
+  const showMobileSub = isMobile && stepHasMobileSub(step)
+  const mobilePageFor = (s: number) => (isMobile && stepHasMobileSub(s) ? subStep : null)
+  const canLeaveDetailsBase = Boolean(details?.propertyTitle.trim() && details.salePrice && details.sizeUnit)
+  const canLeaveLocationBase = Boolean(location.regionId && location.districtId && location.wardId && location.exactLocation.trim())
+  useEffect(() => { if (!isMobile) setSubStep(0) }, [isMobile])
+
   async function handleSubmit() {
     const selectedType = category === 'house-sale'
       ? (details as HouseDetails).houseType
@@ -106,11 +119,13 @@ export default function HomePage() {
     if (!details?.propertyTitle.trim() || !details.salePrice || !selectedType) {
       setBanner({ tone: 'warning', text: tr('Please complete the property title, sale price, and property type.') })
       setStep(0)
+      setSubStep(0)
       return
     }
     if (!details.broker.name.trim() || !details.broker.phone.trim() || !details.owner.name.trim() || !details.owner.phone.trim()) {
       setBanner({ tone: 'warning', text: tr('Broker and owner names and phone numbers are required.') })
       setStep(2)
+      setSubStep(0)
       return
     }
 
@@ -215,7 +230,7 @@ export default function HomePage() {
                 </aside>
                 <div className="oweru-wizard-body">
                 {step === 0 && (
-                  <DetailsStep category={category} details={details} onChange={setDetails} showErrors={showErrors} />
+                  <DetailsStep category={category} details={details} onChange={setDetails} showErrors={showErrors} mobilePage={mobilePageFor(0)} />
                 )}
                 {step === 1 && (
                   <FeaturesStep category={category} details={details} onChange={setDetails} />
@@ -231,6 +246,7 @@ export default function HomePage() {
                     onChange={setLocation}
                     onVideoUploading={setIsVideoUploading}
                     showErrors={showErrors}
+                    mobilePage={mobilePageFor(3)}
                   />
                 )}
                 {step === 4 && (
@@ -250,7 +266,14 @@ export default function HomePage() {
                 <div className="d-flex justify-content-between mt-4 pt-3 border-top oweru-wizard-actions">
                   <button
                     className="btn btn-outline-secondary"
-                    onClick={() => { setBanner(null); step === 0 ? reset() : setStep((s) => s - 1) }}
+                    onClick={() => {
+                      setBanner(null)
+                      if (showMobileSub && subStep === 1) { setSubStep(0); return }
+                      if (step === 0) { reset(); return }
+                      const prev = step - 1
+                      setStep(prev)
+                      setSubStep(isMobile && stepHasMobileSub(prev) ? 1 : 0)
+                    }}
                   >
                     <i className="bi bi-arrow-left me-1" /> {tr('Back')}
                   </button>
@@ -259,6 +282,14 @@ export default function HomePage() {
                     <button
                       className="btn btn-oweru"
                       onClick={() => {
+                        if (showMobileSub && subStep === 0) {
+                          const okBase = step === 0 ? canLeaveDetailsBase : canLeaveLocationBase
+                          if (!okBase) { setShowErrors(true); return }
+                          setShowErrors(false)
+                          setBanner(null)
+                          setSubStep(1)
+                          return
+                        }
                         const ok =
                           (step === 0 && canContinueFromDetails)
                           || step === 1
@@ -268,6 +299,7 @@ export default function HomePage() {
                         if (!ok) { setShowErrors(true); return }
                         setShowErrors(false)
                         setBanner(null)
+                        setSubStep(0)
                         setStep((s) => s + 1)
                       }}
                     >
