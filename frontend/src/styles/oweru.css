@@ -530,7 +530,7 @@ button.listing-document:hover, button.listing-image-link:hover { border-color: #
   .admin-top-actions .admin-primary { flex: 0 0 auto; padding: 9px 13px; font-size: .78rem; white-space: nowrap; }
   .listing-detail-grid { grid-template-columns: 1fr; }
   .listing-image-link img { width: 100px; height: 74px; }
-  .modal-actions .admin-primary { width: 100%; }
+  .modal-actions .admin-primary { width: 100%; justify-content: center; }
   .modal-actions { justify-content: stretch; }
   .confirm-modal-actions .admin-ghost, .confirm-modal-actions .admin-danger { flex: 1; }
 }
