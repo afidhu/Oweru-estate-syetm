@@ -5,12 +5,42 @@ Read/update/soft-delete access to `HouseForSale`, `LandForSale`, and
 credentials. Every route sits behind `ExternalAuthGuard` and requires a
 static bearer token.
 
-Base path (mounted in this repo): `/external/properties`
-Public base URL for partner integration: `https://saleapi.oweru.com`
+- **Base path in this repo:** `/external/properties`
+- **Public base URL:** `https://saleapi.oweru.com`
+- **Full URL example:** `https://saleapi.oweru.com/external/properties`
 
-## 1. Environment variable
+## 1. Authentication — required header
 
-Add a long, random secret to `backend/.env` (never commit the real value):
+Every request, on every endpoint below, must carry:
+
+| Header | Value | Required |
+|---|---|---|
+| `Authorization` | `Bearer <EXTERNAL_SYSTEM_KEY>` | ✅ always |
+| `Content-Type` | `application/json` | ✅ on `PATCH` (request has a body) |
+
+There is no API key query param and no cookie — the bearer token is the
+only credential. Requests with no header, an empty header, a non-`Bearer`
+scheme, or a token that doesn't match the server's `EXTERNAL_SYSTEM_KEY`
+all get the same response:
+
+```http
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+
+{
+  "message": "Invalid or missing bearer token.",
+  "error": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+`ExternalAuthGuard` (`src/external/external-auth.guard.ts`) reads
+`process.env.EXTERNAL_SYSTEM_KEY` on every request and fails closed with
+that same 401 if the variable is unset server-side — a missing/misconfigured
+secret can never be mistaken for "allow all". Compare is constant-time
+(`crypto.timingSafeEqual`).
+
+### Setting the secret
 
 ```bash
 # generate one:
@@ -18,19 +48,38 @@ openssl rand -hex 32
 ```
 
 ```dotenv
+# backend/.env
 EXTERNAL_SYSTEM_KEY="<paste the generated value here>"
 ```
 
-`ExternalAuthGuard` reads `process.env.EXTERNAL_SYSTEM_KEY` on every request
-and fails closed (401) if the variable is unset — it will never silently
-allow unauthenticated access because the env var is missing. Restart the
-Nest server after setting it.
+Restart the Nest server after setting it. Hand the partner developer the
+token value out-of-band (not over email/Slack in plaintext, if you can help
+it) — never a database credential, only this one shared secret.
 
-Hand the partner developer the token value out-of-band (not over
-email/Slack in plaintext, if you can help it) and have them send it as:
+### curl examples
 
-```
-Authorization: Bearer <token>
+```bash
+# A. Combined feed
+curl -X GET 'https://saleapi.oweru.com/external/properties' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <token>'
+
+# B. One category
+curl -X GET 'https://saleapi.oweru.com/external/properties/houses' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <token>'
+
+# C. Update a record
+curl -X PATCH 'https://saleapi.oweru.com/external/properties/houses/<id>' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{ "status": "ACTIVE", "salePrice": 950000 }'
+
+# D. Soft-delete a record
+curl -X DELETE 'https://saleapi.oweru.com/external/properties/houses/<id>' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ## 2. File structure
@@ -55,8 +104,14 @@ src/external/
 | PATCH | `/external/properties/:type/:id` | Update one record by id. |
 | DELETE | `/external/properties/:type/:id` | Soft-delete: sets `status = "DELETED"`. Row is kept for audit. |
 
-`:id` is the record's UUID primary key. An unknown `:type` returns `400`; an
-unknown `:id` returns `404`; a missing/invalid bearer token returns `401`.
+`:id` is the record's UUID primary key.
+
+| Status | When |
+|---|---|
+| `200` | Request succeeded. |
+| `400` | `:type` isn't `houses`/`lands`/`commercial`, or the request/record couldn't be processed. |
+| `401` | Missing/invalid `Authorization` header. |
+| `404` | `:type` is valid but no record matches `:id`. |
 
 > **Note:** this repo already exposes `GET /properties` (see
 > `src/properties/`), which returns the internal `Property` mirror table in
@@ -73,6 +128,9 @@ info:
   description: >
     B2B integration API exposing read/update/soft-delete access to house,
     land, and commercial listings without exposing database credentials.
+    Every operation requires the bearerAuth scheme described below —
+    Authorization: Bearer <token> — where <token> matches the server's
+    EXTERNAL_SYSTEM_KEY.
   version: 1.0.0
   contact:
     name: Oweru Platform Team
@@ -86,12 +144,16 @@ security:
 paths:
   /external/properties:
     get:
-      summary: Get combined listing feed
+      summary: Retrieve all property listings across all categories
       description: >
-        Returns every active (non-DELETED) listing across houses, lands,
-        and commercial areas in a single array.
+        Returns the absolute master list of all properties (Houses, Lands,
+        and Commercial Areas combined) that have not been soft-deleted.
+        Built with Promise.all against all three source tables and merged
+        into one array.
       operationId: getCombinedProperties
       tags: [Properties]
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Combined listing feed
@@ -108,10 +170,14 @@ paths:
 
   /external/properties/{type}:
     get:
-      summary: Get category list
-      description: Returns active listings for a single category.
+      summary: Retrieve listings for a single category
+      description: >
+        Returns active (non-DELETED) listings for exactly one category,
+        selected by the `type` path parameter.
       operationId: getPropertiesByType
       tags: [Properties]
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/TypeParam'
       responses:
@@ -131,8 +197,14 @@ paths:
   /external/properties/{type}/{id}:
     patch:
       summary: Update a listing
+      description: >
+        Partially updates one record in the table selected by `type`,
+        matching the given `id`. Only the fields present in the body are
+        changed.
       operationId: updateProperty
       tags: [Properties]
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/TypeParam'
         - $ref: '#/components/parameters/IdParam'
@@ -158,9 +230,14 @@ paths:
 
     delete:
       summary: Soft-delete a listing
-      description: Sets `status` to `DELETED`. The row itself is preserved.
+      description: >
+        Sets `status` to `DELETED` instead of removing the row — the
+        record is preserved for audit trails and excluded from every
+        active GET feed above.
       operationId: softDeleteProperty
       tags: [Properties]
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/TypeParam'
         - $ref: '#/components/parameters/IdParam'
@@ -184,6 +261,11 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: >
+        Send `Authorization: Bearer <token>` on every request, where
+        <token> is the shared EXTERNAL_SYSTEM_KEY value issued to your
+        integration. There is no other auth mechanism (no API key query
+        param, no cookie).
 
   parameters:
     TypeParam:
@@ -257,8 +339,6 @@ components:
     ErrorResponse:
       type: object
       properties:
-        statusCode:
-          type: integer
         message:
           oneOf:
             - type: string
@@ -267,6 +347,8 @@ components:
                 type: string
         error:
           type: string
+        statusCode:
+          type: integer
 
   responses:
     BadRequest:
@@ -276,9 +358,9 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
-            statusCode: 400
             message: 'Unknown type "vehicles". Use one of: houses, lands, commercial.'
             error: Bad Request
+            statusCode: 400
     Unauthorized:
       description: Missing or invalid bearer token.
       content:
@@ -286,9 +368,9 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
-            statusCode: 401
             message: Invalid or missing bearer token.
             error: Unauthorized
+            statusCode: 401
     NotFound:
       description: No record exists for the given `:type` and `:id`.
       content:
@@ -296,7 +378,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
-            statusCode: 404
             message: 'No "houses" record found for id "..."'
             error: Not Found
+            statusCode: 404
 ```
