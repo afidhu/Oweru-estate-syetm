@@ -396,6 +396,9 @@ button, input, select, textarea { max-width: 100%; }
 .confirm-modal-actions { gap: 10px; padding: 16px 24px; }
 .admin-icon-button, .row-actions button, .modal-heading > button { display: grid; place-items: center; border: 1px solid #dce1e8; border-radius: 7px; width: 38px; height: 38px; background: #fff; color: #606b7e; cursor: pointer; }
 .admin-icon-button:hover, .row-actions button:hover { border-color: #b6c0d0; color: #101a35; }
+.admin-icon-button:disabled { opacity: .6; cursor: wait; }
+.admin-icon-spin { display: inline-block; animation: admin-icon-spin-anim .7s linear infinite; }
+@keyframes admin-icon-spin-anim { to { transform: rotate(360deg); } }
 .admin-alert { display: flex; align-items: center; gap: 9px; margin: -10px 0 22px; border: 1px solid #ead49b; border-radius: 8px; padding: 11px 14px; background: #fff9e9; color: #745b1e; font-size: .83rem; }
 .admin-alert button { margin-left: auto; border: 0; background: transparent; color: inherit; cursor: pointer; }
 .admin-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
@@ -521,9 +524,10 @@ button.listing-document:hover, button.listing-image-link:hover { border-color: #
   .admin-metrics { grid-template-columns: 1fr 1fr; }
   .metric-card { flex-direction: column; min-height: 124px; }
   .metric-card strong { font-size: 1.25rem; }
-  .admin-primary { flex: 1; justify-content: center; }
   .admin-icon-button { flex: 0 0 38px; }
   .admin-live { flex-basis: 100%; margin-right: 0; }
+  .admin-top-actions { justify-content: flex-end; }
+  .admin-top-actions .admin-primary { flex: 0 0 auto; padding: 9px 13px; font-size: .78rem; white-space: nowrap; }
   .listing-detail-grid { grid-template-columns: 1fr; }
   .listing-image-link img { width: 100px; height: 74px; }
   .modal-actions .admin-primary { width: 100%; }
