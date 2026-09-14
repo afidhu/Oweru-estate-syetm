@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.config/prisma.service';
+import { UpdateExternalListingDto } from './dto/update-external-listing.dto';
 
 export type ListingType = 'houses' | 'lands' | 'commercial';
 
@@ -14,6 +15,7 @@ const NOT_DELETED = { status: { not: 'DELETED' } };
 interface ListingDelegate {
   findMany(args: { where: typeof NOT_DELETED }): Promise<unknown[]>;
   update(args: { where: { id: string }; data: Record<string, unknown> }): Promise<unknown>;
+  delete(args: { where: { id: string } }): Promise<unknown>;
 }
 
 @Injectable()
@@ -50,10 +52,16 @@ export class ExternalPropertiesService {
   }
 
   /** C. Update one record in the table selected by :type. */
-  async update(type: string, id: string, data: Record<string, unknown>) {
+  async update(type: string, id: string, updateExternalListingDto: UpdateExternalListingDto) {
     const model = this.delegateFor(type);
     try {
-      return await model.update({ where: { id }, data });
+      return await model.update({
+        where: { id },
+        // UpdateExternalListingDto only ever holds the fields the global
+        // ValidationPipe whitelisted (see the DTO file) — safe to forward
+        // straight to Prisma as the update payload.
+        data: updateExternalListingDto as unknown as Record<string, unknown>,
+      });
     } catch (error) {
       if (isRecordNotFound(error)) {
         throw new NotFoundException(`No "${type}" record found for id "${id}".`);
@@ -62,11 +70,14 @@ export class ExternalPropertiesService {
     }
   }
 
-  /** D. Soft-delete: flips status to "DELETED" instead of removing the row. */
-  async softDelete(type: string, id: string) {
+  /**
+   * D. Hard delete: permanently removes the row from the table selected by
+   * :type. No soft-delete/status flip — the record is gone.
+   */
+  async remove(type: string, id: string) {
     const model = this.delegateFor(type);
     try {
-      return await model.update({ where: { id }, data: { status: 'DELETED' } });
+      return await model.delete({ where: { id } });
     } catch (error) {
       if (isRecordNotFound(error)) {
         throw new NotFoundException(`No "${type}" record found for id "${id}".`);

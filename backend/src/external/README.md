@@ -1,9 +1,12 @@
 # External B2B Properties Gateway
 
-Read/update/soft-delete access to `HouseForSale`, `LandForSale`, and
+Read/update/delete access to `HouseForSale`, `LandForSale`, and
 `CommercialArea` for partner systems, without handing out database
 credentials. Every route sits behind `ExternalAuthGuard` and requires a
 static bearer token.
+
+> **DELETE is a permanent hard delete.** There is no soft-delete or
+> recovery on this gateway — see §3 below.
 
 - **Base path in this repo:** `/external/properties`
 - **Public base URL:** `https://saleapi.oweru.com`
@@ -76,11 +79,32 @@ curl -X PATCH 'https://saleapi.oweru.com/external/properties/houses/<id>' \
   -H 'Content-Type: application/json' \
   -d '{ "status": "ACTIVE", "salePrice": 950000 }'
 
-# D. Soft-delete a record
+# D. Permanently delete a record (hard delete — cannot be undone)
 curl -X DELETE 'https://saleapi.oweru.com/external/properties/houses/<id>' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer <token>'
 ```
+
+### PATCH body fields
+
+`UpdateExternalListingDto` is the only shape the global `ValidationPipe`
+accepts on this route — any field not listed below is silently dropped
+before it reaches the database:
+
+| Field | Type | Applies to |
+|---|---|---|
+| `title` | string | all |
+| `status` | string | all |
+| `salePrice` | number | houses, lands, commercial (sale) |
+| `monthlyRent` | number | commercial (rent) |
+| `rentalTerm` | string | commercial (rent) |
+| `size` | number | all |
+| `sizeUnit` | string | all |
+| `description` | string | all |
+
+Sending a field a given `:type` doesn't have in its schema (e.g.
+`monthlyRent` on a `houses` record) still passes validation here, but
+Prisma rejects it — the service layer catches that and returns `400`.
 
 ## 2. File structure
 
@@ -102,7 +126,7 @@ src/external/
 | GET | `/external/properties` | Combined feed: all active (non-`DELETED`) rows from Houses + Lands + Commercial. |
 | GET | `/external/properties/:type` | One type's active rows. `:type` ∈ `houses`, `lands`, `commercial`. |
 | PATCH | `/external/properties/:type/:id` | Update one record by id. |
-| DELETE | `/external/properties/:type/:id` | Soft-delete: sets `status = "DELETED"`. Row is kept for audit. |
+| DELETE | `/external/properties/:type/:id` | **Hard delete** — the row is permanently removed from the table. Cannot be undone. |
 
 `:id` is the record's UUID primary key.
 
@@ -126,7 +150,7 @@ openapi: 3.0.3
 info:
   title: Oweru External Properties Gateway
   description: >
-    B2B integration API exposing read/update/soft-delete access to house,
+    B2B integration API exposing read/update/hard-delete access to house,
     land, and commercial listings without exposing database credentials.
     Every operation requires the bearerAuth scheme described below —
     Authorization: Bearer <token> — where <token> matches the server's
@@ -147,7 +171,7 @@ paths:
       summary: Retrieve all property listings across all categories
       description: >
         Returns the absolute master list of all properties (Houses, Lands,
-        and Commercial Areas combined) that have not been soft-deleted.
+        and Commercial Areas combined) whose status is not "DELETED".
         Built with Promise.all against all three source tables and merged
         into one array.
       operationId: getCombinedProperties
@@ -229,12 +253,12 @@ paths:
           $ref: '#/components/responses/NotFound'
 
     delete:
-      summary: Soft-delete a listing
+      summary: Permanently delete a listing
       description: >
-        Sets `status` to `DELETED` instead of removing the row — the
-        record is preserved for audit trails and excluded from every
-        active GET feed above.
-      operationId: softDeleteProperty
+        Hard delete: the row is removed from the table with Prisma's
+        `.delete()`. This cannot be undone — there is no soft-delete or
+        recovery for this endpoint.
+      operationId: deleteProperty
       tags: [Properties]
       security:
         - bearerAuth: []
@@ -243,7 +267,7 @@ paths:
         - $ref: '#/components/parameters/IdParam'
       responses:
         '200':
-          description: The record after soft-delete
+          description: The record as it existed immediately before deletion
           content:
             application/json:
               schema:
@@ -313,28 +337,29 @@ components:
     UpdateListingInput:
       type: object
       description: >
-        Partial update. Accepted fields depend on the listing's category
-        (house/land/commercial each have their own column set).
+        Partial update. This is the exact field set UpdateExternalListingDto
+        declares — the global ValidationPipe (whitelist: true) strips
+        anything else before it reaches the database, so fields outside
+        this list are silently ignored. monthlyRent/rentalTerm only apply
+        to commercial (rent) listings.
       properties:
         title:
           type: string
-        salePrice:
-          type: number
         status:
           type: string
-        description:
-          type: string
-        sizeUnit:
+        salePrice:
+          type: number
+        monthlyRent:
+          type: number
+        rentalTerm:
           type: string
         size:
           type: number
-        exactLocation:
+        sizeUnit:
           type: string
-        latitude:
-          type: number
-        longitude:
-          type: number
-      additionalProperties: true
+        description:
+          type: string
+      additionalProperties: false
 
     ErrorResponse:
       type: object

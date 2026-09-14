@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, UseGuards, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { ExternalAuthGuard } from './external-auth.guard';
 import { ExternalPropertiesService } from './external-properties.service';
 import { UpdateExternalListingDto } from './dto/update-external-listing.dto';
@@ -9,8 +9,8 @@ import { UpdateExternalListingDto } from './dto/update-external-listing.dto';
  * so partner systems never touch raw database credentials.
  *
  * Mounted at /external/properties — kept separate from the existing
- * /properties endpoint (which serves the internal Property mirror table in a
- * different shape) to avoid a silent route collision.
+ * /properties endpoint (which serves the internal Property mirror table in
+ * a different shape) to avoid a silent route collision.
  */
 @Controller('external/properties')
 @UseGuards(ExternalAuthGuard)
@@ -30,22 +30,21 @@ export class ExternalPropertiesController {
   }
 
   // C. PATCH /external/properties/:type/:id — update one record.
-  // The body is intentionally loosely validated: each listing type has a
-  // different column set (see UpdateExternalListingDto), so the global
-  // ValidationPipe's `whitelist: true` is disabled just for this parameter
-  // instead of stripping fields it doesn't recognize.
+  // UpdateExternalListingDto is fully decorated with class-validator, so
+  // the global ValidationPipe's `whitelist: true` keeps every field it
+  // declares instead of stripping the body down to nothing.
   @Patch(':type/:id')
   update(
     @Param('type') type: string,
     @Param('id') id: string,
-    @Body(new ValidationPipe({ whitelist: false, transform: true })) body: UpdateExternalListingDto,
+    @Body() updateExternalListingDto: UpdateExternalListingDto,
   ) {
-    return this.externalPropertiesService.update(type, id, body);
+    return this.externalPropertiesService.update(type, id, updateExternalListingDto);
   }
 
-  // D. DELETE /external/properties/:type/:id — soft-delete (status -> DELETED).
+  // D. DELETE /external/properties/:type/:id — permanent hard delete.
   @Delete(':type/:id')
-  softDelete(@Param('type') type: string, @Param('id') id: string) {
-    return this.externalPropertiesService.softDelete(type, id);
+  remove(@Param('type') type: string, @Param('id') id: string) {
+    return this.externalPropertiesService.remove(type, id);
   }
 }
