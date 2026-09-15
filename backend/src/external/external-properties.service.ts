@@ -12,6 +12,10 @@ const DELEGATE_KEY: Record<ListingType, 'houseForSale' | 'landForSale' | 'commer
 
 const NOT_DELETED = { status: { not: 'DELETED' } };
 
+// All media URLs handed to the external partner must be absolute against the
+// gateway's own public host — never the marketing site (www.oweru.com).
+const MEDIA_BASE_URL = process.env.PUBLIC_MEDIA_BASE_URL || 'https://saleapi.oweru.com';
+
 interface ListingDelegate {
   findMany(args: { where: typeof NOT_DELETED; include?: Record<string, unknown> }): Promise<unknown[]>;
   update(args: { where: { id: string }; data: Record<string, unknown> }): Promise<unknown>;
@@ -204,8 +208,8 @@ export class ExternalPropertiesService {
         operatingRegion: regionName,
         operatingDistrict: districtName,
       },
-      images: (row.images ?? []).map((image: Record<string, any>) => `https://oweru.com${image.url}`),
-      videos: (row.videos ?? []).map((video: Record<string, any>) => `https://oweru.com${video.url}`),
+      images: (row.images ?? []).map((image: Record<string, any>) => `${MEDIA_BASE_URL}${image.url}`),
+      videos: (row.videos ?? []).map((video: Record<string, any>) => `${MEDIA_BASE_URL}${video.url}`),
     };
 
     if (type === 'houses') {
