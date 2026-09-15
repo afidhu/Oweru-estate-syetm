@@ -29,13 +29,13 @@ let OwnersController = class OwnersController {
         return this.ownersService.findAll();
     }
     findOne(id) {
-        return this.ownersService.findOne(+id);
+        return this.ownersService.findOne(id);
     }
     update(id, updateOwnerDto) {
-        return this.ownersService.update(+id, updateOwnerDto);
+        return this.ownersService.update(id, updateOwnerDto);
     }
     remove(id) {
-        return this.ownersService.remove(+id);
+        return this.ownersService.remove(id);
     }
 };
 exports.OwnersController = OwnersController;

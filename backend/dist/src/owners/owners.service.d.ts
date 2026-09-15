@@ -24,7 +24,7 @@ export declare class OwnersService {
         nid: string | null;
         tin: string | null;
     }[]>;
-    findOne(id: number): import("@prisma/client").Prisma.Prisma__OwnerClient<{
+    findOne(id: string): import("@prisma/client").Prisma.Prisma__OwnerClient<{
         id: string;
         email: string | null;
         createdAt: Date;
@@ -34,7 +34,7 @@ export declare class OwnersService {
         nid: string | null;
         tin: string | null;
     } | null, null, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
-    update(id: number, updateOwnerDto: UpdateOwnerDto): import("@prisma/client").Prisma.Prisma__OwnerClient<{
+    update(id: string, updateOwnerDto: UpdateOwnerDto): import("@prisma/client").Prisma.Prisma__OwnerClient<{
         id: string;
         email: string | null;
         createdAt: Date;
@@ -44,7 +44,7 @@ export declare class OwnersService {
         nid: string | null;
         tin: string | null;
     }, never, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
-    remove(id: number): import("@prisma/client").Prisma.Prisma__OwnerClient<{
+    remove(id: string): import("@prisma/client").Prisma.Prisma__OwnerClient<{
         id: string;
         email: string | null;
         createdAt: Date;

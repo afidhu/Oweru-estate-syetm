@@ -68,8 +68,14 @@ export default function LocationImagesStep({
 
     const map = L.map(mapRef.current).setView([-6.369, 34.8888], 13);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap contributors",
+    // The official tile.openstreetmap.org server actively 403s apps that don't follow its
+    // strict usage policy (no caching proxy, high volume, etc.) — CARTO's free basemap tiles
+    // are built for exactly this kind of embedded-app use and stay reliably up.
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 19,
     }).addTo(map);
 
     mapInstanceRef.current = map;
@@ -281,7 +287,7 @@ export default function LocationImagesStep({
         </ul>
       )}
 
-      <label className="form-label fw-semibold d-block mt-3">{tr("Property video")}</label>
+      <label className="form-label fw-semibold d-block mt-3">{tr("Property video")} <small className="text-muted">({tr("optional")})</small></label>
       <label className="oweru-upload-box d-block mb-1">
         <i className="bi bi-camera-video fs-4 d-block mb-1" />
         {location.videoUrl ? tr("Video uploaded") : tr("Add one video")}
@@ -292,9 +298,6 @@ export default function LocationImagesStep({
           onChange={(e) => handleVideoChange(e.target.files?.[0])}
         />
       </label>
-      {showErrors && !location.videoUrl && (
-        <div className="text-danger small mt-1"><i className="bi bi-exclamation-circle me-1" />{tr("A video is required")}</div>
-      )}
       {videoUploading && (
         <div className="mb-2">
           <div className="d-flex align-items-center gap-2 small text-muted mb-1">

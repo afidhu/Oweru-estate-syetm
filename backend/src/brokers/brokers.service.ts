@@ -16,22 +16,22 @@ export class BrokersService {
     return this.prisma.broker.findMany();
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return this.prisma.broker.findUnique({
-      where: { id: id.toString() },
+      where: { id },
     });
   }
 
-  update(id: number, updateBrokerDto: UpdateBrokerDto) {
+  update(id: string, updateBrokerDto: UpdateBrokerDto) {
     return this.prisma.broker.update({
-      where: { id: id.toString() },
+      where: { id },
       data: updateBrokerDto,
     });
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return this.prisma.broker.delete({
-      where: { id: id.toString() },
+      where: { id },
     });
   }
 }

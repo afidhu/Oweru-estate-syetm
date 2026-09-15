@@ -19,16 +19,16 @@ export class OwnersController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.ownersService.findOne(+id);
+    return this.ownersService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateOwnerDto: UpdateOwnerDto) {
-    return this.ownersService.update(+id, updateOwnerDto);
+    return this.ownersService.update(id, updateOwnerDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.ownersService.remove(+id);
+    return this.ownersService.remove(id);
   }
 }

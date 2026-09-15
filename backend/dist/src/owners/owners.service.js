@@ -27,18 +27,18 @@ let OwnersService = class OwnersService {
     }
     findOne(id) {
         return this.prisma.owner.findUnique({
-            where: { id: id.toString() },
+            where: { id },
         });
     }
     update(id, updateOwnerDto) {
         return this.prisma.owner.update({
-            where: { id: id.toString() },
+            where: { id },
             data: updateOwnerDto,
         });
     }
     remove(id) {
         return this.prisma.owner.delete({
-            where: { id: id.toString() },
+            where: { id },
         });
     }
 };
