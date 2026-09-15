@@ -76,15 +76,25 @@ Appendix A.
 
 ### 2.1 Primary request path — dashboard & public site
 
-```
-┌──────────────┐     ┌────────────────────┐     ┌─────────────────────────┐     ┌───────────────────┐     ┌────────────────┐
-│   Client      │     │  Admin Dashboard    │     │   NestJS Server App     │     │ Prisma Client      │     │  MySQL Engine   │
-│  (browser)    │────▶│  (React SPA,        │────▶│   Layer                 │────▶│ (Gatekeeper)       │────▶│  Storage Node   │
-│  public form  │     │   TanStack Query)    │     │  Controller → Service   │     │ generated client,   │     │  DB: oweruSales │
-│  or workspace │◀────│                      │◀────│  → DTO validation       │◀────│ driver adapter      │◀────│  (or saledb per │
-│               │     │                      │     │  → business logic       │     │ (@prisma/adapter-   │     │  environment)   │
-└──────────────┘     └────────────────────┘     └─────────────────────────┘     │ mariadb)            │     └────────────────┘
-                                                                                     └─────────────────────────┘
+```mermaid
+graph LR
+  A["Client Browser<br/>public wizard or<br/>direct API caller"]
+  B["Admin Dashboard Workspace<br/>React SPA · TanStack Query<br/>services/api.ts"]
+  C["NestJS Server Core App Layer<br/>Controller -> DTO ValidationPipe<br/>-> Service business logic"]
+  D["Prisma Client Gatekeeper<br/>PrismaService<br/>@prisma/adapter-mariadb"]
+  E["MySQL Engine Storage Node<br/>DB: oweruSales<br/>prisma/migrations/*"]
+
+  A -->|HTTPS REST/JSON| B
+  B -->|axios, VITE_API_URL| C
+  C -->|typed Prisma calls| D
+  D -->|SQL over adapter| E
+  E -.->|rows| D
+  D -.->|typed results| C
+  C -.->|JSON response| B
+  B -.->|render| A
+
+  F["Static /uploads<br/>served directly off disk<br/>NOT through Prisma"]
+  C -.->|useStaticAssets prefix /uploads/| F
 ```
 
 - **Client → Dashboard**: `axios`-based `services/api.ts`, base URL from `VITE_API_URL`
@@ -109,14 +119,38 @@ Appendix A.
 
 ### 2.2 B2B interconnect flow — `/external/properties`
 
-```
-┌────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐   ┌───────────────────────────┐   ┌──────────────────┐
-│ Third-Party      │   │ ExternalAuthGuard     │   │ Route Discriminator   │   │ Serialization Transformer │   │ Response Delivery │
-│ Caller (Oweru    │──▶│ Verification Gate      │──▶│ (:type path param)    │──▶│ toApiListing() /          │──▶│ { "properties":   │
-│ OMS / partner)   │   │ constant-time compare  │   │ houses | lands |       │   │ mapPropertyRecord()       │   │   [ ... ] }       │
-│                  │◀──│ 401 on any mismatch    │◀──│ commercial → Prisma    │◀──│ nests size/location/      │◀──│  JSON payload     │
-│                  │   │ or missing env secret  │   │ delegate lookup        │   │ owner/broker/media        │   │                    │
-└────────────────┘   └──────────────────────┘   └──────────────────────┘   └───────────────────────────┘   └──────────────────┘
+```mermaid
+sequenceDiagram
+  participant P as Third-Party Caller<br/>(Oweru OMS / partner)
+  participant G as ExternalAuthGuard<br/>Verification Gate
+  participant R as Route Discriminator<br/>(:type path param)
+  participant T as Serialization Transformer<br/>toApiListing()/mapPropertyRecord()
+  participant DB as Prisma / MySQL
+
+  P->>G: Request + Authorization: Bearer <token>
+  alt EXTERNAL_SYSTEM_KEY unset on server
+    G-->>P: 401 Unauthorized ("External access is not configured.")
+  else token missing or mismatched (timingSafeEqual)
+    G-->>P: 401 Unauthorized ("Invalid or missing bearer token.")
+  else token verified
+    G->>R: forward request
+    alt :type not in {houses, lands, commercial}
+      R-->>P: 400 Bad Request ("Unknown type ...")
+    else :type resolved to a Prisma delegate
+      R->>DB: findMany / update / delete (+ relations on GET)
+      DB-->>R: raw row(s)
+      alt GET routes
+        R->>T: raw row(s) with relations
+        T-->>P: 200 OK { "properties": [ ...nested... ] }
+      else PATCH / DELETE
+        alt Prisma P2025 (record not found)
+          R-->>P: 404 Not Found
+        else success
+          R-->>P: 200 OK (raw updated/deleted row)
+        end
+      end
+    end
+  end
 ```
 
 1. **Verification Gate** — `ExternalAuthGuard` (`src/external/external-auth.guard.ts`) runs
@@ -159,18 +193,180 @@ listings have genuinely different column sets (bedrooms vs. land type vs. rental
 Prisma's relation model handles three narrow tables more cleanly than one wide one with dozens of
 nullable columns.
 
-```
-PropertyCategory ──┬──< HouseForSale
-                    ├──< LandForSale
-                    └──< CommercialArea
+```mermaid
+erDiagram
+  PROPERTY_CATEGORY ||--o{ HOUSE_FOR_SALE : categorizes
+  PROPERTY_CATEGORY ||--o{ LAND_FOR_SALE : categorizes
+  PROPERTY_CATEGORY ||--o{ COMMERCIAL_AREA : categorizes
 
-Region ──< District ──< Ward
-   │            │           │
-   └────────────┴───────────┴──< (each listing table has its own regionId/districtId/wardId FK)
+  REGION ||--o{ DISTRICT : contains
+  DISTRICT ||--o{ WARD : contains
+  REGION ||--o{ HOUSE_FOR_SALE : located_in
+  DISTRICT ||--o{ HOUSE_FOR_SALE : located_in
+  WARD ||--o{ HOUSE_FOR_SALE : located_in
+  REGION ||--o{ LAND_FOR_SALE : located_in
+  DISTRICT ||--o{ LAND_FOR_SALE : located_in
+  WARD ||--o{ LAND_FOR_SALE : located_in
+  REGION ||--o{ COMMERCIAL_AREA : located_in
+  DISTRICT ||--o{ COMMERCIAL_AREA : located_in
+  WARD ||--o{ COMMERCIAL_AREA : located_in
 
-Broker ──< (each listing table has its own brokerId FK)
-Owner  ──< (each listing table has its own ownerId FK)
+  BROKER ||--o{ HOUSE_FOR_SALE : represents
+  OWNER  ||--o{ HOUSE_FOR_SALE : owns
+  BROKER ||--o{ LAND_FOR_SALE : represents
+  OWNER  ||--o{ LAND_FOR_SALE : owns
+  BROKER ||--o{ COMMERCIAL_AREA : represents
+  OWNER  ||--o{ COMMERCIAL_AREA : owns
+
+  HOUSE_TYPE ||--o{ HOUSE_FOR_SALE : classifies
+  LAND_TYPE ||--o{ LAND_FOR_SALE : classifies
+  PROPERTY_TYPE ||--o{ COMMERCIAL_AREA : classifies
+
+  HOUSE_FOR_SALE ||--o{ HOUSE_FOR_SALE_FEATURE : has
+  HOUSE_FOR_SALE ||--o{ HOUSE_FOR_SALE_IMAGE : has
+  HOUSE_FOR_SALE ||--o{ HOUSE_FOR_SALE_DOCUMENT : has
+  HOUSE_FOR_SALE ||--o{ HOUSE_FOR_SALE_VIDEO : has
+  LAND_FOR_SALE ||--o{ LAND_FOR_SALE_FEATURE : has
+  LAND_FOR_SALE ||--o{ LAND_FOR_SALE_IMAGE : has
+  LAND_FOR_SALE ||--o{ LAND_FOR_SALE_DOCUMENT : has
+  LAND_FOR_SALE ||--o{ LAND_FOR_SALE_VIDEO : has
+  COMMERCIAL_AREA ||--o{ COMMERCIAL_AREA_FEATURE : has
+  COMMERCIAL_AREA ||--o{ COMMERCIAL_AREA_IMAGE : has
+  COMMERCIAL_AREA ||--o{ COMMERCIAL_AREA_DOCUMENT : has
+  COMMERCIAL_AREA ||--o{ COMMERCIAL_AREA_VIDEO : has
+
+  HOUSE_FOR_SALE ..|| PROPERTY : "mirrored on APPROVE"
+  LAND_FOR_SALE ..|| PROPERTY : "mirrored on APPROVE"
+  COMMERCIAL_AREA ..|| PROPERTY : "mirrored on APPROVE"
+
+  HOUSE_FOR_SALE {
+    string id PK
+    string title
+    decimal salePrice
+    string sizeUnit
+    decimal size
+    string houseTypeId FK
+    int bedrooms
+    int bathrooms
+    string status "default PENDING"
+    string propertyCategoryId FK
+    string brokerId FK
+    string ownerId FK
+    string regionId FK
+    string districtId FK
+    string wardId FK
+    string exactLocation
+    float latitude
+    float longitude
+    text description
+  }
+
+  LAND_FOR_SALE {
+    string id PK
+    string title
+    decimal salePrice
+    string sizeUnit
+    decimal size
+    string landTypeId FK
+    string status "default PENDING"
+    string propertyCategoryId FK
+    string brokerId FK
+    string ownerId FK
+    string regionId FK
+    string districtId FK
+    string wardId FK
+  }
+
+  COMMERCIAL_AREA {
+    string id PK
+    string title
+    string listingType "SALE or RENT"
+    decimal salePrice
+    decimal monthlyRent
+    string rentalTerm
+    string propertyTypeId FK
+    string status "default PENDING"
+    string propertyCategoryId FK
+    string brokerId FK
+    string ownerId FK
+    string regionId FK
+    string districtId FK
+    string wardId FK
+  }
+
+  PROPERTY_CATEGORY {
+    string id PK
+    string title UK
+    string slug UK "free text, admin-entered"
+    string icon
+    string accent
+  }
+
+  REGION {
+    string id PK
+    string name UK
+  }
+
+  DISTRICT {
+    string id PK
+    string name
+    string regionId FK
+  }
+
+  WARD {
+    string id PK
+    string name
+    string districtId FK
+  }
+
+  BROKER {
+    string id PK
+    string name
+    string phone
+    string nid
+    string tin
+    string email
+  }
+
+  OWNER {
+    string id PK
+    string name
+    string phone
+    string nid
+    string tin
+    string email
+  }
+
+  PROPERTY {
+    string id PK
+    string externalId UK "source listing's own id"
+    string status "verified once mirrored"
+    string category
+    decimal price
+    json features
+    string locationRegion "NOT NULL, empty-string fallback"
+    string locationDistrict "NOT NULL, empty-string fallback"
+    json images
+    json videos
+  }
+
+  HOUSE_FOR_SALE_FEATURE {
+    string id PK
+    string name
+    string houseId FK
+  }
+
+  HOUSE_FOR_SALE_IMAGE {
+    string id PK
+    string url "relative, e.g. /uploads/uuid.jpg"
+    boolean isCover
+    string houseId FK
+  }
 ```
+
+> The `LandForSale*`/`CommercialArea*` feature/image/document/video tables (shown above only as
+> relationship edges, to keep the diagram legible) mirror `HouseForSaleFeature`/`HouseForSaleImage`
+> field-for-field, with `landId`/`commercialId` in place of `houseId`.
 
 | Table | Purpose | Notable fields |
 |---|---|---|
