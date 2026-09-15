@@ -99,9 +99,8 @@ export default function HomePage() {
   )
   const canContinueFromImages = Boolean(
     location.images.length > 0
-    && location.videoUrl
     && location.documents.length > 0
-    && !isVideoUploading,
+    && !isVideoUploading, // video itself is optional — only block while one is mid-upload
   )
 
   // Mobile-only: step 0 (commercial only) and step 3 are split into two sub-pages.

@@ -27,18 +27,18 @@ let BrokersService = class BrokersService {
     }
     findOne(id) {
         return this.prisma.broker.findUnique({
-            where: { id: id.toString() },
+            where: { id },
         });
     }
     update(id, updateBrokerDto) {
         return this.prisma.broker.update({
-            where: { id: id.toString() },
+            where: { id },
             data: updateBrokerDto,
         });
     }
     remove(id) {
         return this.prisma.broker.delete({
-            where: { id: id.toString() },
+            where: { id },
         });
     }
 };

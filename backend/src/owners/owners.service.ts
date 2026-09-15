@@ -16,22 +16,22 @@ export class OwnersService {
     return this.prisma.owner.findMany();
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return this.prisma.owner.findUnique({
-      where: { id: id.toString() },
+      where: { id },
     });
   }
 
-  update(id: number, updateOwnerDto: UpdateOwnerDto) {
-    return  this.prisma.owner.update({
-      where: { id: id.toString() },
+  update(id: string, updateOwnerDto: UpdateOwnerDto) {
+    return this.prisma.owner.update({
+      where: { id },
       data: updateOwnerDto,
     });
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return this.prisma.owner.delete({
-      where: { id: id.toString() },
+      where: { id },
     });
   }
 }

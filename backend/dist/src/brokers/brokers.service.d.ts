@@ -24,7 +24,7 @@ export declare class BrokersService {
         nid: string | null;
         tin: string | null;
     }[]>;
-    findOne(id: number): import("@prisma/client").Prisma.Prisma__BrokerClient<{
+    findOne(id: string): import("@prisma/client").Prisma.Prisma__BrokerClient<{
         id: string;
         email: string | null;
         createdAt: Date;
@@ -34,7 +34,7 @@ export declare class BrokersService {
         nid: string | null;
         tin: string | null;
     } | null, null, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
-    update(id: number, updateBrokerDto: UpdateBrokerDto): import("@prisma/client").Prisma.Prisma__BrokerClient<{
+    update(id: string, updateBrokerDto: UpdateBrokerDto): import("@prisma/client").Prisma.Prisma__BrokerClient<{
         id: string;
         email: string | null;
         createdAt: Date;
@@ -44,7 +44,7 @@ export declare class BrokersService {
         nid: string | null;
         tin: string | null;
     }, never, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
-    remove(id: number): import("@prisma/client").Prisma.Prisma__BrokerClient<{
+    remove(id: string): import("@prisma/client").Prisma.Prisma__BrokerClient<{
         id: string;
         email: string | null;
         createdAt: Date;

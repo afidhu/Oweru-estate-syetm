@@ -29,13 +29,13 @@ let BrokersController = class BrokersController {
         return this.brokersService.findAll();
     }
     findOne(id) {
-        return this.brokersService.findOne(+id);
+        return this.brokersService.findOne(id);
     }
     update(id, updateBrokerDto) {
-        return this.brokersService.update(+id, updateBrokerDto);
+        return this.brokersService.update(id, updateBrokerDto);
     }
     remove(id) {
-        return this.brokersService.remove(+id);
+        return this.brokersService.remove(id);
     }
 };
 exports.BrokersController = BrokersController;
