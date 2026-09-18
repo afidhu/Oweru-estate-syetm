@@ -238,9 +238,9 @@ erDiagram
   COMMERCIAL_AREA ||--o{ COMMERCIAL_AREA_DOCUMENT : has
   COMMERCIAL_AREA ||--o{ COMMERCIAL_AREA_VIDEO : has
 
-  HOUSE_FOR_SALE ..|| PROPERTY : "mirrored on APPROVE"
-  LAND_FOR_SALE ..|| PROPERTY : "mirrored on APPROVE"
-  COMMERCIAL_AREA ..|| PROPERTY : "mirrored on APPROVE"
+  HOUSE_FOR_SALE ||..|| PROPERTY : "mirrored on APPROVE"
+  LAND_FOR_SALE ||..|| PROPERTY : "mirrored on APPROVE"
+  COMMERCIAL_AREA ||..|| PROPERTY : "mirrored on APPROVE"
 
   HOUSE_FOR_SALE {
     string id PK

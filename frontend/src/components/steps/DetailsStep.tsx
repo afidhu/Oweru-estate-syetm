@@ -150,17 +150,19 @@ function FeatureChips({
 }
 
 function BrokerOwnerStatus({
-  status, broker, owner, onField, showErrors = false,
+  status, broker, owner, submitterRole, onField, showErrors = false,
 }: {
   status: string
   broker: PersonDetails
   owner: PersonDetails
-  onField: (field: 'status' | 'broker' | 'owner', value: string | PersonDetails) => void
+  submitterRole: 'broker' | 'owner'
+  onField: (field: 'status' | 'broker' | 'owner' | 'submitterRole', value: string | PersonDetails) => void
   showErrors?: boolean
 }) {
   const { tr } = useLanguage()
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const mark = (k: string) => setTouched((t) => ({ ...t, [k]: true }))
+  const showBroker = submitterRole !== 'owner'
   const personFields = (person: PersonDetails, field: 'broker' | 'owner') => {
     const nameEmpty = !person.name.trim()
     const phoneEmpty = !person.phone.trim()
@@ -178,30 +180,33 @@ function BrokerOwnerStatus({
     )
   }
   return (
-    <div className="row g-3 mt-1">
-      {/* <div className="col-md-4">
-        <label className="form-label fw-semibold">Status</label>
-        <select
-          className="form-select"
-          value={status}
-          onChange={(e) => onField('status', e.target.value)}
-        >
-          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </div> */}
-      <div className="col-md-6">
-        <label className="form-label fw-semibold">{tr('Broker')} <span className="text-danger">*</span></label> <br />
-
-        {personFields(broker, 'broker')}
+    <>
+      <label className="form-label fw-semibold d-block">{tr('Who is submitting this listing?')}</label>
+      <div className="btn-group mb-3" role="group">
+        <button type="button" className={`btn ${showBroker ? 'btn-oweru' : 'btn-outline-secondary'}`} onClick={() => onField('submitterRole', 'broker')}>
+          <i className="bi bi-briefcase me-1" /> {tr('Wakala (Broker)')}
+        </button>
+        <button type="button" className={`btn ${!showBroker ? 'btn-oweru' : 'btn-outline-secondary'}`} onClick={() => onField('submitterRole', 'owner')}>
+          <i className="bi bi-person-badge me-1" /> {tr('Mmiliki (Owner)')}
+        </button>
       </div>
 
-      
-      <div className="col-md-6">
-        <label className="form-label fw-semibold">{tr('Owner')} <span className="text-danger">*</span></label>
-        {personFields(owner, 'owner')}
-        <div className="form-text">{tr('Who holds title to this property.')}</div>
+      <div className="row g-3 mt-1">
+        {showBroker && (
+          <div className="col-md-6">
+            <label className="form-label fw-semibold">{tr('Broker')}</label> <br />
+
+            {personFields(broker, 'broker')}
+          </div>
+        )}
+
+        <div className={showBroker ? 'col-md-6' : 'col-12 col-md-6 mx-auto'}>
+          <label className="form-label fw-semibold">{tr('Owner')}</label>
+          {personFields(owner, 'owner')}
+          <div className="form-text">{tr('Who holds title to this property.')}</div>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -215,7 +220,7 @@ export function BrokerOwnerStep({ category, details, onChange, showErrors = fals
       <div>
         <h5 className="mb-1">{tr('Broker & Owner')}</h5>
         <p className="text-muted mb-3">{tr('Who holds title to this property.')}</p>
-        <BrokerOwnerStatus showErrors={showErrors} status={d.status} broker={d.broker} owner={d.owner} onField={(field, value) => set({ [field]: value } as Partial<HouseDetails>)} />
+        <BrokerOwnerStatus showErrors={showErrors} status={d.status} broker={d.broker} owner={d.owner} submitterRole={d.submitterRole} onField={(field, value) => set({ [field]: value } as Partial<HouseDetails>)} />
       </div>
     )
   }
@@ -226,7 +231,7 @@ export function BrokerOwnerStep({ category, details, onChange, showErrors = fals
       <div>
         <h5 className="mb-1">{tr('Broker & Owner')}</h5>
         <p className="text-muted mb-3">{tr('Who holds title to this property.')}</p>
-        <BrokerOwnerStatus showErrors={showErrors} status={d.status} broker={d.broker} owner={d.owner} onField={(field, value) => set({ [field]: value } as Partial<LandDetails>)} />
+        <BrokerOwnerStatus showErrors={showErrors} status={d.status} broker={d.broker} owner={d.owner} submitterRole={d.submitterRole} onField={(field, value) => set({ [field]: value } as Partial<LandDetails>)} />
       </div>
     )
   }
@@ -236,7 +241,7 @@ export function BrokerOwnerStep({ category, details, onChange, showErrors = fals
     <div>
       <h5 className="mb-1">{tr('Broker & Owner')}</h5>
       <p className="text-muted mb-3">{tr('Who holds title to this property.')}</p>
-      <BrokerOwnerStatus showErrors={showErrors} status={d.status} broker={d.broker} owner={d.owner} onField={(field, value) => set({ [field]: value } as Partial<CommercialDetails>)} />
+      <BrokerOwnerStatus showErrors={showErrors} status={d.status} broker={d.broker} owner={d.owner} submitterRole={d.submitterRole} onField={(field, value) => set({ [field]: value } as Partial<CommercialDetails>)} />
     </div>
   )
 }
@@ -290,7 +295,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
         <h5 className="mb-1">{tr('Property details')}</h5>
         <p className="text-muted mb-4">{tr('Provide details about the house.')}</p>
 
-        <label className="form-label fw-semibold">{tr('Property title')} <span className="text-danger">*</span></label>
+        <label className="form-label fw-semibold">{tr('Property title')}</label>
         <input
           className={`form-control mb-2 ${invalid('propertyTitle', !d.propertyTitle.trim())}`}
           placeholder="e.g. 4 Bedroom House for Sale in Masaki"
@@ -302,7 +307,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
 
         <div className="row g-3 mb-3">
           <div className="col-md-8">
-            <label className="form-label fw-semibold">{tr('Sale price (TZS)')} <span className="text-danger">*</span></label>
+            <label className="form-label fw-semibold">{tr('Sale price (TZS)')}</label>
             <input
               type="text"
               inputMode="numeric"
@@ -315,7 +320,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
             <ErrorText show={err('salePrice', !d.salePrice)} message={tr('Sale price is required')} />
           </div>
           <div className="col-md-4">
-            <label className="form-label fw-semibold">{tr('Size unit')} <span className="text-danger">*</span></label>
+            <label className="form-label fw-semibold">{tr('Size unit')}</label>
             <ResponsiveSelect
               value={d.sizeUnit}
               placeholder="--"
@@ -330,7 +335,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
         <label className="form-label fw-semibold d-block">{tr('Size')}</label>
         <SizeField unit={d.sizeUnit} value={d.size} onChange={(size) => set({ size })} />
 
-        <label className="form-label fw-semibold d-block">{tr('House type')} <span className="text-danger">*</span></label>
+        <label className="form-label fw-semibold d-block">{tr('House type')}</label>
         <div className="d-flex flex-wrap gap-3 mb-3">
           {houseTypes.map((houseType) => (
             <div className="form-check" key={houseType.id}>
@@ -384,7 +389,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
         <h5 className="mb-1">{tr('Property details')}</h5>
         <p className="text-muted mb-4">{tr('Provide details about the land.')}</p>
 
-        <label className="form-label fw-semibold">{tr('Property title')} <span className="text-danger">*</span></label>
+        <label className="form-label fw-semibold">{tr('Property title')}</label>
         <input
           className={`form-control mb-2 ${invalid('propertyTitle', !d.propertyTitle.trim())}`}
           placeholder="e.g. 2-Acre Plot for Sale in Bagamoyo"
@@ -396,7 +401,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
 
         <div className="row g-3 mb-3">
           <div className="col-md-8">
-            <label className="form-label fw-semibold">{tr('Sale price (TZS)')} <span className="text-danger">*</span></label>
+            <label className="form-label fw-semibold">{tr('Sale price (TZS)')}</label>
             <input
               type="text"
               inputMode="numeric"
@@ -409,7 +414,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
             <ErrorText show={err('salePrice', !d.salePrice)} message={tr('Sale price is required')} />
           </div>
           <div className="col-md-4">
-            <label className="form-label fw-semibold">{tr('Size unit')} <span className="text-danger">*</span></label>
+            <label className="form-label fw-semibold">{tr('Size unit')}</label>
             <ResponsiveSelect
               value={d.sizeUnit}
               placeholder="--"
@@ -424,7 +429,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
         <label className="form-label fw-semibold d-block">{tr('Size')}</label>
         <SizeField unit={d.sizeUnit} value={d.size} onChange={(size) => set({ size })} />
 
-        <label className="form-label fw-semibold d-block">{tr('Land type')} <span className="text-danger">*</span></label>
+        <label className="form-label fw-semibold d-block">{tr('Land type')}</label>
         <div className="d-flex flex-wrap gap-3 mb-3">
           {landTypes.map((landType) => (
             <div className="form-check" key={landType.id}>
@@ -456,7 +461,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
       <p className="text-muted mb-4">{tr('Provide details about the property.')}</p>
 
       {mobilePage !== 1 && (<>
-      <label className="form-label fw-semibold">{tr('Property title')} <span className="text-danger">*</span></label>
+      <label className="form-label fw-semibold">{tr('Property title')}</label>
       <input
         className={`form-control mb-2 ${invalid('propertyTitle', !d.propertyTitle.trim())}`}
         placeholder="e.g. Office Building for Sale in Upanga"
@@ -468,7 +473,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
 
       <div className="row g-3 mb-3">
         <div className="col-md-8">
-          <label className="form-label fw-semibold">{tr('Sale price (TZS)')} <span className="text-danger">*</span></label>
+          <label className="form-label fw-semibold">{tr('Sale price (TZS)')}</label>
           <input
             type="text"
             inputMode="numeric"
@@ -481,7 +486,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
           <ErrorText show={err('salePrice', !d.salePrice)} message={tr('Sale price is required')} />
         </div>
         <div className="col-md-4">
-          <label className="form-label fw-semibold">{tr('Size unit')} <span className="text-danger">*</span></label>
+          <label className="form-label fw-semibold">{tr('Size unit')}</label>
           <ResponsiveSelect
             value={d.sizeUnit}
             placeholder="--"
@@ -498,7 +503,7 @@ export default function DetailsStep({ category, details, onChange, showErrors = 
       </>)}
 
       {mobilePage !== 0 && (<>
-      <label className="form-label fw-semibold d-block">{tr('Commercial property type')} <span className="text-danger">*</span></label>
+      <label className="form-label fw-semibold d-block">{tr('Commercial property type')}</label>
       <p className="text-muted small mb-2">{tr('Buildings and open land plots show different amenities.')}</p>
 
       {(() => {
