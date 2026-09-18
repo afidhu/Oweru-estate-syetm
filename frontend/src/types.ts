@@ -57,6 +57,8 @@ export interface HouseDetails {
   status: string
   broker: PersonDetails
   owner: PersonDetails
+  /** Who is filling in this listing — decides whether the broker section is shown. */
+  submitterRole: 'broker' | 'owner'
 }
 
 export interface LandDetails {
@@ -69,6 +71,8 @@ export interface LandDetails {
   status: string
   broker: PersonDetails
   owner: PersonDetails
+  /** Who is filling in this listing — decides whether the broker section is shown. */
+  submitterRole: 'broker' | 'owner'
 }
 
 export interface CommercialDetails {
@@ -81,6 +85,8 @@ export interface CommercialDetails {
   status: string
   broker: PersonDetails
   owner: PersonDetails
+  /** Who is filling in this listing — decides whether the broker section is shown. */
+  submitterRole: 'broker' | 'owner'
 }
 
 export type DetailsData = HouseDetails | LandDetails | CommercialDetails

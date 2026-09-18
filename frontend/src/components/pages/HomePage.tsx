@@ -13,6 +13,10 @@ import Stepper from '../shared/Stepper';
 import Navbar from '../shared/Navbar';
 import { useLanguage } from '../../i18n'
 
+// Used as the broker on record whenever the submitter identifies as the property owner
+// (no broker involved) — the broker section is hidden in that case, see BrokerOwnerStatus.
+const DEFAULT_OWNER_SUBMISSION_BROKER = { name: 'Pendo Oweru', phone: '+255714859934', nid: '', tin: '' }
+
 const emptyLocation: LocationData = {
   region: '', regionId: '', district: '', districtId: '', ward: '', wardId: '', exactLocation: '', searchQuery: '',
   lat: null, lng: null, description: '', descriptionLang: 'sw', images: [], documents: [], videoUrl: '', videoFileType: '', videoSizeBytes: null,
@@ -24,6 +28,7 @@ function makeDetails(category: CategoryId): DetailsData {
     status: 'PENDING',
     broker: { name: '', phone: '', nid: '', tin: '' },
     owner: { name: '', phone: '', nid: '', tin: '' },
+    submitterRole: 'broker' as const,
   }
   if (category === 'house-sale') return { ...base, houseType: '', bedrooms: '', bathrooms: '', features: [] } as HouseDetails
   if (category === 'land-sale') return { ...base, landType: '', features: [] } as LandDetails
@@ -84,8 +89,7 @@ export default function HomePage() {
     && selectedType,
   )
   const canContinueFromBrokerOwner = Boolean(
-    details?.broker.name.trim()
-    && details?.broker.phone.trim()
+    (details?.submitterRole === 'owner' || (details?.broker.name.trim() && details?.broker.phone.trim()))
     && details?.owner.name.trim()
     && details?.owner.phone.trim(),
   )
@@ -121,8 +125,11 @@ export default function HomePage() {
       setSubStep(0)
       return
     }
-    if (!details.broker.name.trim() || !details.broker.phone.trim() || !details.owner.name.trim() || !details.owner.phone.trim()) {
-      setBanner({ tone: 'warning', text: tr('Broker and owner names and phone numbers are required.') })
+    const needsBroker = details.submitterRole !== 'owner'
+    const brokerMissing = needsBroker && (!details.broker.name.trim() || !details.broker.phone.trim())
+    const ownerMissing = !details.owner.name.trim() || !details.owner.phone.trim()
+    if (brokerMissing || ownerMissing) {
+      setBanner({ tone: 'warning', text: brokerMissing ? tr('Broker and owner names and phone numbers are required.') : tr('Owner name and phone number are required.') })
       setStep(2)
       setSubStep(0)
       return
@@ -147,7 +154,9 @@ export default function HomePage() {
         longitude: location?.lng ?? undefined,
         description: location?.description || undefined,
         language: location?.descriptionLang === 'sw' ? 'KISWAHILI' : 'ENGLISH',
-        broker: { ...details.broker, nid: details.broker.nid || undefined, tin: details.broker.tin || undefined },
+        broker: details.submitterRole === 'owner'
+          ? { ...DEFAULT_OWNER_SUBMISSION_BROKER, nid: undefined, tin: undefined }
+          : { ...details.broker, nid: details.broker.nid || undefined, tin: details.broker.tin || undefined },
         owner: { ...details.owner, nid: details.owner.nid || undefined, tin: details.owner.tin || undefined },
       }
       const [uploadedImages, uploadedDocuments] = await Promise.all([

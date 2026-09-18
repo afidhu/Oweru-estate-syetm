@@ -68,7 +68,7 @@ export default function ReviewStep({ category, details, location }: ReviewStepPr
         <Field label={tr('Size')} value={sizeValue} />
         <Field label={typeLabel} value={typeValue} />
         <Field label={tr('Status')} value={status} />
-        <Field label={tr('Broker')} value={broker.name ? `${broker.name} (${broker.phone})` : tr('Unassigned')} />
+        <Field label={tr('Broker')} value={details.submitterRole === 'owner' ? `Pendo Oweru (+255714859934)` : broker.name ? `${broker.name} (${broker.phone})` : tr('Unassigned')} />
         <Field label={tr('Owner')} value={owner.name ? `${owner.name} (${owner.phone})` : tr('Not registered')} />
         <Field label={tr('Region / District')} value={[location.region, location.district].filter(Boolean).join(' / ')} />
         <Field label={tr('Ward / Exact location')} value={[location.ward, location.exactLocation].filter(Boolean).join(' / ')} />
