@@ -33,6 +33,7 @@ export default function LocationImagesStep({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  const locationIconRef = useRef<L.DivIcon | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
   const [videoUploading, setVideoUploading] = useState(false);
@@ -66,18 +67,22 @@ export default function LocationImagesStep({
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    const map = L.map(mapRef.current).setView([-6.369, 34.8888], 13);
+    const map = L.map(mapRef.current).setView([-6.7924, 39.2083], 13);
 
-    // The official tile.openstreetmap.org server actively 403s apps that don't follow its
-    // strict usage policy (no caching proxy, high volume, etc.) — CARTO's free basemap tiles
-    // are built for exactly this kind of embedded-app use and stay reliably up.
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: "abcd",
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
     }).addTo(map);
 
+    const locationIcon = L.divIcon({
+      className: "oweru-location-marker-wrapper",
+      html: '<span class="oweru-location-marker"><span></span></span>',
+      iconSize: [30, 38],
+      iconAnchor: [15, 38],
+    });
+
+    locationIconRef.current = locationIcon;
     mapInstanceRef.current = map;
     setIsMapReady(true);
 
@@ -98,10 +103,10 @@ export default function LocationImagesStep({
       if (markerRef.current) {
         markerRef.current.setLatLng(position);
       } else {
-        markerRef.current = L.marker(position).addTo(mapInstanceRef.current);
+        markerRef.current = L.marker(position, { icon: locationIconRef.current ?? undefined }).addTo(mapInstanceRef.current);
       }
 
-      mapInstanceRef.current.setView(position, 16);
+      mapInstanceRef.current.setView(position, 18);
     } else if (markerRef.current) {
       markerRef.current.remove();
       markerRef.current = null;
@@ -126,18 +131,86 @@ export default function LocationImagesStep({
   const handleSearch = async () => {
     if (!location.searchQuery) return;
 
+    let fallbackSearchQuery = location.searchQuery;
+    let hasSpecificLocation = false;
     try {
+      const normalizedQuery = location.searchQuery.trim().toLowerCase();
+      const selectedRegion = regions.find((item) => item.id === location.regionId);
+      const selectedDistrict = districts.find((item) => item.id === location.districtId);
+      const selectedWard = wards.find((item) => item.id === location.wardId);
+      const matchedWard = wards.find((item) => normalizedQuery.includes(item.name.toLowerCase()));
+      const matchedDistrict = districts.find((item) => normalizedQuery.includes(item.name.toLowerCase()));
+      const matchedRegion = regions.find((item) => normalizedQuery.includes(item.name.toLowerCase()));
+      const ward = matchedWard || selectedWard;
+      const district = (ward && districts.find((item) => item.id === ward.districtId)) || matchedDistrict || selectedDistrict;
+      const region = (district && regions.find((item) => item.id === district.regionId)) || matchedRegion || selectedRegion;
+      hasSpecificLocation = Boolean(ward || district);
+      const searchParts = [location.searchQuery, ward?.name, district?.name, region?.name, 'Tanzania']
+        .filter((part, index, parts): part is string => Boolean(part) && parts.indexOf(part) === index);
+      const photonSearchParts = [ward ? `${ward.name} ward` : location.searchQuery, region?.name, 'Tanzania']
+        .filter((part, index, parts): part is string => Boolean(part) && parts.indexOf(part) === index);
+      fallbackSearchQuery = photonSearchParts.join(', ');
+      const params = new URLSearchParams({
+        format: 'json',
+        addressdetails: '1',
+        limit: '8',
+        countrycodes: 'tz',
+        q: searchParts.join(', '),
+      });
+      const usePhotonFallback = async () => {
+        if (!ward && !district) return;
+        const fallbackResponse = await fetch(
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(photonSearchParts.join(', '))}&limit=5`,
+        );
+        const fallbackData = await fallbackResponse.json() as {
+          features?: Array<{ properties?: { type?: string }; geometry?: { coordinates?: [number, number] } }>;
+        };
+        const feature = fallbackData.features?.find((item) => item.properties?.type === 'house') || fallbackData.features?.[0];
+        const coordinates = feature?.geometry?.coordinates;
+        if (coordinates) set({ lat: coordinates[1], lng: coordinates[0] });
+      };
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location.searchQuery)}`,
+        `https://nominatim.openstreetmap.org/search?${params.toString()}`,
       );
-      const data = await response.json();
+      const data = await response.json() as Array<{
+        lat: string;
+        lon: string;
+        type?: string;
+        importance?: number;
+      }>;
 
       if (data && data.length > 0) {
-        const { lat, lon } = data[0];
-        set({ lat: parseFloat(lat), lng: parseFloat(lon) });
+        const isBroadAdministrative = (type?: string) =>
+          type === 'administrative' || type === 'region' || type === 'county' || type === 'state' || type === 'country';
+        const result = [...data].sort((a, b) => {
+          return Number(isBroadAdministrative(a.type)) - Number(isBroadAdministrative(b.type)) || (b.importance || 0) - (a.importance || 0);
+        })[0];
+        if (!ward && !isBroadAdministrative(result.type)) {
+          const { lat, lon } = result;
+          set({ lat: parseFloat(lat), lng: parseFloat(lon) });
+          return;
+        }
+      }
+
+      if (ward || district) {
+        await usePhotonFallback();
       }
     } catch (error) {
       console.error("Search error:", error);
+      try {
+        if (hasSpecificLocation) {
+          const fallbackResponse = await fetch(
+            `https://photon.komoot.io/api/?q=${encodeURIComponent(fallbackSearchQuery)}&limit=1`,
+          );
+          const fallbackData = await fallbackResponse.json() as {
+            features?: Array<{ geometry?: { coordinates?: [number, number] } }>;
+          };
+          const coordinates = fallbackData.features?.[0]?.geometry?.coordinates;
+          if (coordinates) set({ lat: coordinates[1], lng: coordinates[0] });
+        }
+      } catch (fallbackError) {
+        console.error("Fallback search error:", fallbackError);
+      }
     }
   };
 
@@ -346,7 +419,7 @@ export default function LocationImagesStep({
         {tr("Verified documents")}
       </label>
       <label
-        className={`btn btn-outline-secondary btn-sm mb-1 ${videoProgress > 0 && videoProgress < 100 ? 'disabled' : ''}`}
+        className={`oweru-document-upload-button mb-1 ${location.documents.length > 0 ? 'has-documents' : ''} ${videoProgress > 0 && videoProgress < 100 ? 'disabled' : ''}`}
         onClick={(event) => {
           if (videoProgress > 0 && videoProgress < 100) event.preventDefault()
         }}
