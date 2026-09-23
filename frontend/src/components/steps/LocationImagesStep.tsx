@@ -69,9 +69,10 @@ export default function LocationImagesStep({
 
     const map = L.map(mapRef.current).setView([-6.7924, 39.2083], 13);
 
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
+    L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
       attribution:
-        'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Sources: Esri, TomTom, Garmin, FAO, NOAA, USGS, &copy; OpenStreetMap contributors, and the GIS User Community',
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://hotosm.org/">Humanitarian OpenStreetMap Team</a>',
+      subdomains: "abc",
       maxZoom: 19,
     }).addTo(map);
 
